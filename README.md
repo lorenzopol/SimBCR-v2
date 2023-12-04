@@ -7,3 +7,5 @@ Python script for simulating recombinant receptor 3D structure.
 - [ ] AlphaFold. Currently using [SWISS-MODEL](https://swissmodel.expasy.org/interactive) in order to get the 3d structure from the aminoacid sequence (check below for more information). 
 - [ ] Dreaming of a custom OpenGL based 3D renderer for custom display of folded protein
 
+# Literature references
+- https://academic.oup.com/bioinformatics/article/36/11/3594/5802461
