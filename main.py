@@ -4,12 +4,17 @@ import Bio.Seq
 import pandas as pd
 import time
 import gzip
+from Bio.PDB import PDBParser
+from io import StringIO
 
 import APIsHelper as APIh
 from PDBHandler import PDBHandler as PDBh
 from Sequences import Sequences
 
 from creds import Credentials
+import warnings
+warnings.filterwarnings("error")
+
 
 
 def generate_new_immuneSIM_dataset():
@@ -24,9 +29,12 @@ def get_variable_sequence_form_immuneSIM(rebuild=False):
     path = os.path.join(os.getcwd(), 'from_immuneSIM')
     df = pd.read_csv(os.path.join(path, "hs_igh_sim.csv"))
     sampled_seq = df.sample()
-    dna_sequence = str(sampled_seq["sequence"].iloc[0])
-    aa_sequence = str(sampled_seq["sequence_aa"].iloc[0])
-    return dna_sequence, aa_sequence
+
+    sampled_seq_raw_data = sampled_seq.to_dict(orient='records')[0]
+    dna_sequence = sampled_seq_raw_data["sequence"]
+    aa_sequence = sampled_seq_raw_data["sequence_aa"]
+
+    return dna_sequence, aa_sequence, sampled_seq_raw_data
 
 
 def handle_gzip(look_up_directory):
@@ -66,25 +74,40 @@ def send_protein_sequence_to_swiss(protein_seq: str | list[str], title):
     PDBh.show_3D_from_pdb(output_filename)
 
 
+def is_valid_pdb(input_string):
+    try:
+        parser = PDBParser()
+        pdb_file = StringIO(input_string)
+        _ = parser.get_structure('temp_structure', pdb_file)
+        return True  # Valid PDB format
+    except Exception as e:
+        print(f"Not a valid PDB file: {e}")
+        return False  # Not a valid PDB format
+
+
+def calculate_cdr3_range(aa_variable_sequence: str, aa_junction: str) -> tuple[int, int]:
+    cdr3_start = aa_variable_sequence.index(aa_junction)
+    cdr3_end = cdr3_start + len(aa_junction)
+    return cdr3_start, cdr3_end
+
+
 def main():
-    dna_variable_sequence, aa_variable_sequence = get_variable_sequence_form_immuneSIM(rebuild=False)
-    dna_light_chain = "".join([str(Sequences.DNA_IGG1_CK).lower(), dna_variable_sequence])
-    print(f"{dna_light_chain = }")
+    dna_variable_sequence, aa_variable_sequence, sampled_seq_raw_data = get_variable_sequence_form_immuneSIM(
+        rebuild=False)
+    aa_junction = sampled_seq_raw_data["junction_aa"]
+    cdr3_start, cdr3_end = calculate_cdr3_range(aa_variable_sequence, aa_junction)
+    dna_light_chain = "".join([dna_variable_sequence, str(Sequences.DNA_IGG1_CK).lower()])
 
     aa_light_chain = Bio.Seq.translate(Bio.Seq.transcribe(dna_light_chain))
-    print(f"{aa_light_chain = }")
-    print(f"Init folding")
     pdb_content = APIh.ESMatlas.send_call_esmatlas_api(aa_light_chain)
-    print(f"Folding done")
-    print(f"Init writing pdb")
+    assert is_valid_pdb(pdb_content), f"\n[ERROR]: ESMatlas did not return a valid pdb file. \n ===== RETURN OUTPUT =====\n{pdb_content}"
+
     path_to_pdb = os.path.join(os.getcwd(), "pdb_files/first_try.pdb")
     with open(path_to_pdb, "w") as cfile:
         cfile.write(pdb_content)
-    print(f"writing pdb done")
-    print(f"Init rendering")
-    PDBh.show_3D_from_pdb(path_to_pdb)
+
+    PDBh.show_3D_from_pdb(path_to_pdb, "CDR", f"{cdr3_start}-{cdr3_end}")
 
 
 if __name__ == "__main__":
     main()
-

@@ -10,10 +10,10 @@ from Bio.PDB.Atom import Atom
 
 class PDBHandler:
     @staticmethod
-    def show_3D_from_pdb(filename, mode=None):
+    def show_3D_from_pdb(filename, mode=None, cdr3_range=None):
         """expects a .pdb files and renders it in html-ipynb"""
         assert ".pdb" in filename, f"ERROR: pdb_render expected a .pdb file. {filename} was given"
-        os.system(f"python show_3D.py {filename} --mode {mode}")
+        os.system(f"python show_3D.py {filename} --mode {mode} --cdr3 {cdr3_range}")
 
     @staticmethod
     def parse_pdb_content(pdb_file_path):
