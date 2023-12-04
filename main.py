@@ -5,7 +5,7 @@ import pandas as pd
 import time
 import gzip
 
-from APIsHelper import Swiss
+import APIsHelper as APIh
 from PDBHandler import PDBHandler as PDBh
 from Sequences import Sequences
 
@@ -51,8 +51,8 @@ def handle_gzip(look_up_directory):
 
 
 def send_protein_sequence_to_swiss(protein_seq: str | list[str], title):
-    response = Swiss.send_call_swiss_api(protein_seq, title)
-    model_url = Swiss.fetch_result_from_swiss_api(response)
+    response = APIh.Swiss.send_call_swiss_api(protein_seq, title)
+    model_url = APIh.Swiss.fetch_result_from_swiss_api(response)
 
     # download .gz file
     os.system(f"start {model_url}")
@@ -68,14 +68,23 @@ def send_protein_sequence_to_swiss(protein_seq: str | list[str], title):
 
 def main():
     dna_variable_sequence, aa_variable_sequence = get_variable_sequence_form_immuneSIM(rebuild=False)
-
     dna_light_chain = "".join([str(Sequences.DNA_IGG1_CK).lower(), dna_variable_sequence])
     print(f"{dna_light_chain = }")
 
     aa_light_chain = Bio.Seq.translate(Bio.Seq.transcribe(dna_light_chain))
     print(f"{aa_light_chain = }")
-    # send_protein_sequence_to_swiss(aa_light_chain, "first_immuneSIM_try")
+    print(f"Init folding")
+    pdb_content = APIh.ESMatlas.send_call_esmatlas_api(aa_light_chain)
+    print(f"Folding done")
+    print(f"Init writing pdb")
+    path_to_pdb = os.path.join(os.getcwd(), "pdb_files/first_try.pdb")
+    with open(path_to_pdb, "w") as cfile:
+        cfile.write(pdb_content)
+    print(f"writing pdb done")
+    print(f"Init rendering")
+    PDBh.show_3D_from_pdb(path_to_pdb)
 
 
 if __name__ == "__main__":
     main()
+

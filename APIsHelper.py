@@ -2,6 +2,16 @@ import requests
 import time
 from typing import *
 from creds import Credentials
+import subprocess
+
+
+class ESMatlas:
+    @staticmethod
+    def send_call_esmatlas_api(sequence: str):
+        command = f'curl -X POST --data "{sequence}" https://api.esmatlas.com/foldSequence/v1/pdb/'
+        result = subprocess.run(command, shell=True, capture_output=True, text=True)
+        result = result.stdout.strip()
+        return result
 
 
 class Swiss:

@@ -2,3 +2,6 @@ creds.py
 render_pdb.html
 notes.txt
 .config_ipynb
+
+env
+pdb_files

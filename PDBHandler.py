@@ -1,7 +1,6 @@
 import numpy as np
 from Bio import PDB
 import os
-from pprint import pprint
 
 # used for type hinting
 from Bio.PDB.Structure import Structure
