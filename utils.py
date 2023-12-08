@@ -2,7 +2,6 @@ import os
 import gzip
 
 
-
 def handle_gzip(look_up_directory):
     files = [f for f in os.listdir(look_up_directory) if
              os.path.isfile(os.path.join(look_up_directory, f)) and f.endswith(".gz")]

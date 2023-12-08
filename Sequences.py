@@ -5,6 +5,7 @@ from Bio import SeqIO
 
 
 class Sequences:
+    file_path = os.path.dirname(os.path.realpath(__file__))
     DNA_FULL_IGG1_HEAVY_CONSTANT_REGION = Seq(
         "GCTAGCACGAAGGGACCATCAGTTTTTCCGTTAGCCCCTTCGAGCAAGAGTACAAGTGGCGGCACTGCGGCGCTTGGATGTTTGGTGAAAGATTACTTCCCAGAGCCGGTGACGGTGTCCTGGAATTCCGGGGCCCTCACTTCTGGTGTCCACACTTTTCCCGCGGTTCTACAAAGTTCGGGGTTATATTCACTGTCGTCCGTCGTGACGGTGCCGTCGTCGTCGCTTGGCACCCAAACATACATCTGTAATGTCAATCATAAGCCGAGTAATACCAAGGTAGATAAAAAGGTTGAACCTAAATCATGCGACAAAACACATACCTGCCCTCCGTGCCCCGCCCCTGAGCTATTAGGAGGCCCGTCTGTGTTCTTATTCCCGCCAAAACCGAAAGACACGTTGATGATCAGTCGAACGCCTGAGGTCACATGCGTCGTGGTAGATGTGTCTCACGAAGATCCCGAAGTTAAGTTCAACTGGTACGTAGATGGGGTTGAGGTACATAATGCTAAAACGAAGCCGCGAGAAGAACAATACAACTCAACTTACCGGGTGGTATCAGTTCTCACCGTTCTTCATCAAGACTGGCTGAACGGTAAAGAATATAAGTGTAAAGTCAGCAATAAGGCACTCCCGGCCCCCATCGAGAAAACCATTTCAAAAGCAAAGGGTCAACCTCGGGAGCCTCAAGTATATACTCTGCCTCCATCTCGTGATGAGCTGACCAAAAATCAAGTCTCCCTAACGTGCCTAGTAAAGGGTTTCTACCCCTCCGACATTGCGGTGGAATGGGAAAGCAATGGTCAACCGGAGAATAATTATAAGACTACCCCTCCGGTACTAGACAGTGACGGGTCATTTTTCCTATATTCCAAGCTTACGGTAGACAAAAGTCGATGGCAACAGGGCAATGTTTTTAGTTGTTCTGTGATGCATGAGGCACTGCATAACCACTACACACAAAAATCATTGTCGCTGTCCCCGGGAAAA")
 
@@ -24,19 +25,19 @@ class Sequences:
     DNA_TCR_BC = Seq("GATTTGAATAAGGTGTTCCCCCCGGAGGTTGCCGTCTTCGAGCCTTCAGAAGCCGAGATTAGCCATACCCAAAAAGCTACTTTGGTTTGCCTCGCAACTGGTTTCTTTCCGGATCATGTGGAATTATCTTGGTGGGTCAACGGAAAGGAAGTCCACTCTGGCGTCTCTACGGATCCTCAACCGCTCAAAGAACAACCGGCACTGAATGACAGTCGTTACTGTCTCTCATCTCGGCTGAGAGTCTCGGCCACGTTTTGGCAGAACCCGAGAAATCACTTTCGTTGTCAGGTGCAATTCTATGGGCTGAGCGAGAATGACGAATGGACACAGGACCGTGCGAAACCAGTGACCCAGATCGTGTCAGCGGAAGCATGGGGGCGGGCTGATTGCGGCTTCACATCCGTATCATATCAGCAAGGTGTACTTTCAGCAACTATCCTATATGAGATCCTTCTGGGGAAAGCGACCCTATATGCTGTACTTGTCAGTGCGCTGGTTCTTATGGCAATGGTAAAGCGAAAGGATTTT")
 
     # ======================================== from FF ========================================
-    IgG1_VH_v_seqReg = tuple(SeqIO.parse(os.path.join(os.getcwd(), 'fasta_files/IG/IgG1_VH_v.fasta'), 'fasta'))
-    IgG1_VH_d_seqReg = tuple(SeqIO.parse(os.path.join(os.getcwd(), 'fasta_files/IG/IgG1_VH_d.fasta'), 'fasta'))
-    IgG1_VH_j_seqReg = tuple(SeqIO.parse(os.path.join(os.getcwd(), 'fasta_files/IG/IgG1_VH_j.fasta'), 'fasta'))
+    IgG1_VH_v_seqReg = tuple(SeqIO.parse(os.path.join(file_path, 'fasta_files/IG/IgG1_VH_v.fasta'), 'fasta'))
+    IgG1_VH_d_seqReg = tuple(SeqIO.parse(os.path.join(file_path, 'fasta_files/IG/IgG1_VH_d.fasta'), 'fasta'))
+    IgG1_VH_j_seqReg = tuple(SeqIO.parse(os.path.join(file_path, 'fasta_files/IG/IgG1_VH_j.fasta'), 'fasta'))
 
-    IgG1_VL_v_seqReg = tuple(SeqIO.parse(os.path.join(os.getcwd(), 'fasta_files/IG/IgG1_VL-K_v.fasta'), 'fasta'))
-    IgG1_VL_j_seqReg = tuple(SeqIO.parse(os.path.join(os.getcwd(), 'fasta_files/IG/IgG1_VL-K_j.fasta'), 'fasta'))
+    IgG1_VL_v_seqReg = tuple(SeqIO.parse(os.path.join(file_path, 'fasta_files/IG/IgG1_VL-K_v.fasta'), 'fasta'))
+    IgG1_VL_j_seqReg = tuple(SeqIO.parse(os.path.join(file_path, 'fasta_files/IG/IgG1_VL-K_j.fasta'), 'fasta'))
 
-    TCR_B_v_seqReg = tuple(SeqIO.parse(os.path.join(os.getcwd(), 'fasta_files/TR/TCR-B_v.fasta'), 'fasta'))
-    TCR_B_d_seqReg = tuple(SeqIO.parse(os.path.join(os.getcwd(), 'fasta_files/TR/TCR-B_d.fasta'), 'fasta'))
-    TCR_B_j_seqReg = tuple(SeqIO.parse(os.path.join(os.getcwd(), 'fasta_files/TR/TCR-B_j.fasta'), 'fasta'))
+    TCR_B_v_seqReg = tuple(SeqIO.parse(os.path.join(file_path, 'fasta_files/TR/TCR-B_v.fasta'), 'fasta'))
+    TCR_B_d_seqReg = tuple(SeqIO.parse(os.path.join(file_path, 'fasta_files/TR/TCR-B_d.fasta'), 'fasta'))
+    TCR_B_j_seqReg = tuple(SeqIO.parse(os.path.join(file_path, 'fasta_files/TR/TCR-B_j.fasta'), 'fasta'))
 
-    TCR_A_v_seqReg = tuple(SeqIO.parse(os.path.join(os.getcwd(), 'fasta_files/TR/TCR-A_v.fasta'), 'fasta'))
-    TCR_A_j_seqReg = tuple(SeqIO.parse(os.path.join(os.getcwd(), 'fasta_files/TR/TCR-A_j.fasta'), 'fasta'))
+    TCR_A_v_seqReg = tuple(SeqIO.parse(os.path.join(file_path, 'fasta_files/TR/TCR-A_v.fasta'), 'fasta'))
+    TCR_A_j_seqReg = tuple(SeqIO.parse(os.path.join(file_path, 'fasta_files/TR/TCR-A_j.fasta'), 'fasta'))
 
     # ======================================== full seqs ========================================
     IgG1_VH_chain = [IgG1_VH_v_seqReg, IgG1_VH_d_seqReg, IgG1_VH_j_seqReg]

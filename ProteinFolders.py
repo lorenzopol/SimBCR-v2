@@ -41,18 +41,22 @@ class ESMatlas:
         PDBh.show_3D_from_pdb(pdb_output_filepath, mode, cdr3_range)
 
 
+@dataclass
 class Swiss:
+    # todo, fix sequence to field
+    sequence: list[str]
     token = Credentials.swiss_api_token
 
-    @classmethod
-    def send_call_swiss_api(cls, sequence: str | List[str], title):
-        if isinstance(sequence, str):
+    def send_call_swiss_api(self, title):
+        if isinstance(self.sequence, str):
             # force sequence to be List[str]
-            sequence = [sequence]
+            sequence = [self.sequence]
+        else:
+            sequence = self.sequence
 
         response = requests.post(
             "https://swissmodel.expasy.org/automodel",
-            headers={"Authorization": f"Token {cls.token}"},
+            headers={"Authorization": f"Token {self.token}"},
             json={
                 "target_sequences":
                     sequence,
@@ -60,8 +64,7 @@ class Swiss:
             })
         return response
 
-    @classmethod
-    def fetch_result_from_swiss_api(cls, response, return_one=True):
+    def fetch_result_from_swiss_api(self, response, return_one=True):
         # Obtain the project_id from the response created above
         project_id = response.json()["project_id"]
 
@@ -73,7 +76,7 @@ class Swiss:
             # Update the status from the server
             response = requests.get(
                 f"https://swissmodel.expasy.org/project/{project_id}/models/summary/",
-                headers={"Authorization": f"Token {cls.token}"})
+                headers={"Authorization": f"Token {self.token}"})
 
             # Update the status
             status = response.json()["status"]
@@ -90,8 +93,9 @@ class Swiss:
                 models_url.append(model['coordinates_url'])
         return models_url[0] if return_one and len(models_url) > 0 else models_url
 
-    def send_protein_sequence_to_swiss(self, protein_seq: str | list[str], title):
-        response = self.send_call_swiss_api(protein_seq, title)
+    def fold(self, title):
+        """fold a sequence and returns the pdb filepath"""
+        response = self.send_call_swiss_api(title)
         model_url = self.fetch_result_from_swiss_api(response)
 
         # download .gz file
@@ -101,6 +105,13 @@ class Swiss:
 
         look_up_directory = Credentials.download_look_up_directory
         output_filename = u.handle_gzip(look_up_directory)
+        print(f"{output_filename = }")
 
         # run jup-notebook for 3D view
         return output_filename
+
+    def fold_and_show_pdb(self, tile: str,
+                          mode=None, cdr3_range=None):
+        """extend self.fold and shows its result"""
+        output_filename = self.fold(tile)
+        PDBh.show_3D_from_pdb(output_filename, mode, cdr3_range)
