@@ -16,7 +16,7 @@ Python script for simulating recombinant receptor 3D structure in a fully autono
 1. In order to get all the necessary python packages run
 `pip install -r requirements.txt`
 
-2. You will need to install R and the immuneSIM package. Please refer to their [installation section](https://github.com/GreiffLab/immuneSIM).
+2. You will need to install R and the immuneSIM package. Please refer to their [installation section](https://github.com/GreiffLab/immuneSIM). Assure yourself of adding R to your system PATH variables.
 3. Finally, clone this repo or download and extract the raw files. 
 
 ## Usage

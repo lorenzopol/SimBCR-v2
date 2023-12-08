@@ -1,6 +1,8 @@
 import numpy as np
 from Bio import PDB
 import os
+from io import StringIO
+
 
 # used for type hinting
 from Bio.PDB.Structure import Structure
@@ -295,6 +297,17 @@ class PDBHandler:
         bonds_pos = PDBHandler.compute_atom_pos_in_bonds_from_structure(structure)
         atom_name_list, atom_coord_list, atom_obj_list = PDBHandler.get_bulk_atoms_coord_from_structure(structure)
         # draw cylinder on bonds_pos and spheres on atom_coord_list
+
+    @staticmethod
+    def is_valid_pdb(input_string):
+        try:
+            parser = PDB.PDBParser()
+            pdb_file = StringIO(input_string)
+            _ = parser.get_structure('temp_structure', pdb_file)
+            return True  # Valid PDB format
+        except Exception as e:
+            print(f"Not a valid PDB file: {e}")
+            return False  # Not a valid PDB format
 
 
 if __name__ == "__main__":
