@@ -13,7 +13,6 @@ warnings.filterwarnings("error")
 
 
 def generate_new_immuneSIM_dataset():
-    # todo: instead of manually modifying main.R, add wrapper to modify from entry point
     path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'from_immuneSIM')
     os.system(f"cd {path} & rscript main.R")
 
@@ -66,7 +65,7 @@ def main():
     cdr3_start, cdr3_end = calculate_cdr3_range(aa_variable_sequence, aa_junction)
     cdr3_range = convert_cdr3range_to_std(cdr3_start, cdr3_end)
 
-    # todo: right now even if a tcr-a is simulated, DNA_IGG1_CK always gets picked
+    # todo: right now even if a tcr-a is simulated, DNA_IGG1_CH1 always gets picked
     dna_light_chain = "".join([dna_variable_sequence, str(Sequences.DNA_IGG1_CH1).lower()])
     aa_light_chain = Bio.Seq.translate(Bio.Seq.transcribe(dna_light_chain))
 
