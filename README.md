@@ -13,17 +13,19 @@ Python script for simulating recombinant receptor 3D structure in a fully autono
 ## Installation
 > WARNING: these are the minimum steps needed to run the CURRENT default behaviour of SimBCR. No other function is being supported 
 
-In order to get all the necessary python packages run
+1. In order to get all the necessary python packages run
 `pip install -r requirements.txt`
 
-After that, you will need to install R and the immuneSIM package. Please refer to their [installation section](https://github.com/GreiffLab/immuneSIM).
+2. You will need to install R and the immuneSIM package. Please refer to their [installation section](https://github.com/GreiffLab/immuneSIM).
+3. Finally, clone this repo or download and extract the raw files. 
 
 ## Usage
-Run main.py with 
+Run main.py (from the root directory of the project) with 
 
 `python main.py`
 
-If everything runs smoothly, a web page should open with your folded heavy chain (only the FAB portion) colored by CDR (red is CDR1, green is CDR2 and blue is CDR3) 
+If everything runs smoothly, a web page should open with your folded heavy chain (only the FAB portion) colored by CDR (red is CDR1, green is CDR2 and blue is CDR3).
+Please keep in mind that the default settings simulate a human IgG heavy chain.
 
 ## Develop timeline from 04/12/23 on:
 - [x] Simulate variable regions with this [R project](https://github.com/GreiffLab/immuneSIM)
