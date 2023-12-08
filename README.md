@@ -10,6 +10,21 @@ Python script for simulating recombinant receptor 3D structure in a fully autono
 4. Autonomous pdb rendering via py3dmol and jupyter-notebook
 5. Two different ways (rainbow and CDR) to color your antibody once folding is done 
 
+## Installation
+> WARNING: these are the minimum steps needed to run the CURRENT default behaviour of SimBCR. No other function is being supported 
+
+In order to get all the necessary python packages run
+`pip install -r requirements.txt`
+
+After that, you will need to install R and the immuneSIM package. Please refer to their [installation section](https://github.com/GreiffLab/immuneSIM).
+
+## Usage
+Run main.py with 
+
+`python main.py`
+
+If everything runs smoothly, a web page should open with your folded heavy chain (only the FAB portion) colored by CDR (red is CDR1, green is CDR2 and blue is CDR3) 
+
 ## Develop timeline from 04/12/23 on:
 - [x] Simulate variable regions with this [R project](https://github.com/GreiffLab/immuneSIM)
 - [x] AlphaFold. Previously using [SWISS-MODEL](https://swissmodel.expasy.org/interactive) in order to get the 3d structure from the aminoacid sequence. Switched to ESMatlas API (even if it does not support more than 400AA prediction. Consider hybrid approach)
