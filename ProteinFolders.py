@@ -8,8 +8,6 @@ from creds import Credentials
 from PDBHandler import PDBHandler as PDBh
 import utils as u
 
-from typing import *
-
 
 @dataclass
 class ESMatlas:
@@ -43,6 +41,7 @@ class ESMatlas:
 
 @dataclass
 class Swiss:
+    """deprecated"""
     # todo, fix sequence to field
     sequence: list[str]
     token = Credentials.swiss_api_token

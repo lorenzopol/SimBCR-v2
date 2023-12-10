@@ -253,11 +253,11 @@ class PDBHandler:
     def _compute_peptide_bond_pos(residues):
         peptide_bond_atom_pos: list[list[float, float, float], ...] = []
         for idx in range(1, len(residues)):
-            prev_aa = residues[idx-1].child_dict
+            prev_aa = residues[idx - 1].child_dict
             current_aa = residues[idx].child_dict
             c_atom = prev_aa.get("C")
             n_atom = current_aa.get("N")
-            assert c_atom is not None and n_atom is not None, f"{residues[idx-1]} at index {idx-1} does not have a C " \
+            assert c_atom is not None and n_atom is not None, f"{residues[idx - 1]} at index {idx - 1} does not have a C " \
                                                               f"atom or {residues[idx]} at index {idx} does not have a " \
                                                               f"n atom. Check pdb file"
 

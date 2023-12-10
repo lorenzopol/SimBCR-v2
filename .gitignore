@@ -3,5 +3,7 @@ render_pdb.html
 notes.txt
 .config_ipynb
 
+obj_files
+tryOpenGL
 env
 pdb_files

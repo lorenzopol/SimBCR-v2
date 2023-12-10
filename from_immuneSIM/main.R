@@ -1,13 +1,13 @@
 library(immuneSIM)
-number_of_sequences <- 29
+number_of_sequences <- 69
 hs_igh_sim <- immuneSIM(
                      number_of_seqs = number_of_sequences,
                      vdj_list = list_germline_genes_allele_01,
                      species = 'hs',
-                     receptor = 'tr',
-                     chain = 'b',
+                     receptor = 'ig',
+                     chain = 'h',
                      insertions_and_deletion_lengths = insertions_and_deletion_lengths_df,
-                     name_repertoire = 'hs_trb_sim',
+                     name_repertoire = 'hs_igh_sim',
                      length_distribution_rand = length_dist_simulation,
                      random = FALSE,
                      vdj_noise = 0,
