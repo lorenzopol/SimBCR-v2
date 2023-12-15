@@ -31,9 +31,6 @@ def pdb_to_obj(pdb_file, output_file, return_pos=False,
     parser = PDBParser()
     structure = parser.get_structure('protein', pdb_file)
 
-    back_bone_atoms = ("N", "CA", "C")
-    atom_counter = 1
-
     atom_coord = []
 
     with open(output_file, 'w') as obj_file:
@@ -44,10 +41,7 @@ def pdb_to_obj(pdb_file, output_file, return_pos=False,
                         x, y, z = atom.coord
                         if return_pos:
                             atom_coord.append((x, y, z))
-                        if atom.name in back_bone_atoms:
-                            atom.set_serial_number(atom_counter)
                         obj_file.write(f"v {x} {y} {z}\n")
-                        atom_counter += 1
 
         # Write faces data to OBJ file
         obj_file.write("g Protein\n")
@@ -68,9 +62,9 @@ def pdb_to_obj(pdb_file, output_file, return_pos=False,
                             obj_file.write(
                                 f"f {residue.child_dict[atom1].serial_number} {residue.child_dict[atom2].serial_number}\n")
 
-                    # compute peptide bonds
                     if residue_idx == len(chain) - 1:
                         break
+        # compute peptide bonds
         residues = tuple(structure.get_residues())
         for idx in range(1, len(residues)):
             prev_aa = residues[idx - 1].child_dict
@@ -91,7 +85,7 @@ def populate_v_and_f_objfield(position: list | tuple, radius: int | float, n_sli
                               v_container: list, f_container: list):
     last_vertx = n_slices * (n_stack - 1) + 2
     position = [position[0], position[2], -position[1]]
-    starting_idx = (last_vertx * iteration)
+    starting_idx = last_vertx * iteration
 
     # add top vertex
     vertex = [(position[0], position[1] + radius, position[2]), ]
