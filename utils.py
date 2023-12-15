@@ -26,12 +26,15 @@ def handle_gzip(look_up_directory):
     return output_filename
 
 
-def pdb_to_obj(pdb_file, output_file):
+def pdb_to_obj(pdb_file, output_file, return_pos=False,
+               add_relative_radius=False) -> list[tuple[int, int, int]] | None:
     parser = PDBParser()
     structure = parser.get_structure('protein', pdb_file)
 
     back_bone_atoms = ("N", "CA", "C")
     atom_counter = 1
+
+    atom_coord = []
 
     with open(output_file, 'w') as obj_file:
         for model in structure:
@@ -39,6 +42,8 @@ def pdb_to_obj(pdb_file, output_file):
                 for residue in chain:
                     for atom in residue:
                         x, y, z = atom.coord
+                        if return_pos:
+                            atom_coord.append((x, y, z))
                         if atom.name in back_bone_atoms:
                             atom.set_serial_number(atom_counter)
                         obj_file.write(f"v {x} {y} {z}\n")
@@ -78,12 +83,18 @@ def pdb_to_obj(pdb_file, output_file):
 
             obj_file.write(f"f {c_atom.serial_number} {n_atom.serial_number}\n")
 
+    if return_pos:
+        return atom_coord
 
-def mine_generate_uv_sphere_obj(position, radius, n_slices, n_stack):
+
+def populate_v_and_f_objfield(position: list | tuple, radius: int | float, n_slices: int, n_stack: int, iteration: int,
+                              v_container: list, f_container: list):
+    last_vertx = n_slices * (n_stack - 1) + 2
     position = [position[0], position[2], -position[1]]
+    starting_idx = (last_vertx * iteration)
 
     # add top vertex
-    vertex = [(position[0], position[1]+radius, position[2]), ]
+    vertex = [(position[0], position[1] + radius, position[2]), ]
     for i in range(n_stack - 1):
         phi = math.pi * (i + 1) / n_stack
 
@@ -94,9 +105,55 @@ def mine_generate_uv_sphere_obj(position, radius, n_slices, n_stack):
             y = position[1] + radius * math.cos(phi)
             vertex.append((x, y, z))
 
-    vertex.append([position[0], position[1]-radius, position[2]])
+    vertex.append([position[0], position[1] - radius, position[2]])
     quads = []
-    for j in range(n_stack-2):
+    for j in range(n_stack - 2):
+        j0 = j * n_slices + 1
+        j1 = (j + 1) * n_slices + 1
+        for i in range(n_slices):
+            i0 = starting_idx + (j0 + i)
+            i1 = starting_idx + (j0 + (i + 1) % n_slices)
+            i2 = starting_idx + (j1 + (i + 1) % n_slices)
+            i3 = starting_idx + (j1 + i)
+            quads.append((i0, i1, i2, i3))
+    for point in vertex:
+        v_container.append((point[0], point[1], point[2]))
+
+    for a, b, c, d in quads:
+        f_container.append((a + 1, b + 1, c + 1))
+        f_container.append((a + 1, c + 1, d + 1))
+
+    for i in range(starting_idx + 2, starting_idx + n_slices + 1):
+        f_container.append((starting_idx+1, i, i + 1))
+    f_container.append((starting_idx+1, starting_idx + 2, starting_idx + n_slices + 1))
+
+    for i in range(1, n_slices):
+        f_container.append((starting_idx + last_vertx,
+                            starting_idx + last_vertx - i,
+                            starting_idx + last_vertx - i - 1))
+    f_container.append((starting_idx + last_vertx, starting_idx + last_vertx, starting_idx + last_vertx - n_slices))
+
+    return v_container, f_container
+
+
+def mine_generate_uv_sphere_obj(position, radius, n_slices, n_stack):
+    position = [position[0], position[2], -position[1]]
+
+    # add top vertex
+    vertex = [(position[0], position[1] + radius, position[2]), ]
+    for i in range(n_stack - 1):
+        phi = math.pi * (i + 1) / n_stack
+
+        for j in range(n_slices):
+            theta = 2 * math.pi * j / n_slices
+            x = position[0] + radius * math.sin(phi) * math.cos(theta)
+            z = position[2] + radius * math.sin(phi) * math.sin(theta)
+            y = position[1] + radius * math.cos(phi)
+            vertex.append((x, y, z))
+
+    vertex.append([position[0], position[1] - radius, position[2]])
+    quads = []
+    for j in range(n_stack - 2):
         j0 = j * n_slices + 1
         j1 = (j + 1) * n_slices + 1
         for i in range(n_slices):
@@ -111,22 +168,42 @@ def mine_generate_uv_sphere_obj(position, radius, n_slices, n_stack):
             file.write(f"v {point[0]} {point[1]} {point[2]}\n")
 
         for a, b, c, d in quads:
-            file.write(f"f {a+1} {b+1} {c+1}\n")
-            file.write(f"f {a+1} {c+1} {d+1}\n")
+            file.write(f"f {a + 1} {b + 1} {c + 1}\n")
+            file.write(f"f {a + 1} {c + 1} {d + 1}\n")
 
         # add tris to top vertex
-        for i in range(2, n_slices+1):
-            file.write(f"f {1} {i} {i+1}\n")
-        file.write(f"f {1} {2} {n_slices+1}\n")
+        for i in range(2, n_slices + 1):
+            file.write(f"f {1} {i} {i + 1}\n")
+        file.write(f"f {1} {2} {n_slices + 1}\n")
 
         # add tris to last vertex
         last_vertx = n_slices * (n_stack - 1) + 2
         for i in range(1, n_slices):
-            file.write(f"f {last_vertx} {last_vertx-i} {last_vertx-i-1}\n")
-        file.write(f"f {last_vertx} {last_vertx-1} {last_vertx-n_slices}\n")
+            file.write(f"f {last_vertx} {last_vertx - i} {last_vertx - i - 1}\n")
+        file.write(f"f {last_vertx} {last_vertx - 1} {last_vertx - n_slices}\n")
+
+
+def try_adding_sphere_to_points():
+    atom_pos_container = pdb_to_obj(r'C:\Users\loren\PycharmProjects\SimBCR-v2\pdb_files\first_try.pdb',
+                                    r'C:\Users\loren\PycharmProjects\SimBCR-v2\obj_files\MineOutputFaces.obj',
+                                    return_pos=True, add_relative_radius=True)
+    v_container = []
+    f_container = []
+    for index, atom_pos in enumerate(atom_pos_container):
+        v_container, f_container = populate_v_and_f_objfield(atom_pos, 0.2, 11, 5, index, v_container, f_container)
+
+    with open("obj_files/is_this_right.obj", "w") as file:
+        for point in v_container:
+            file.write(f"v {point[0]} {point[1]} {point[2]}\n")
+        for face in f_container:
+            file.write(f"f {face[0]} {face[1]} {face[2]}\n")
 
 
 if __name__ == "__main__":
-    mine_generate_uv_sphere_obj([-1, 2, -3], 1, 10, 10)
-    # pdb_to_obj(r'C:\Users\loren\PycharmProjects\SimBCR-v2\pdb_files\first_try.pdb',
-    #            r'C:\Users\loren\PycharmProjects\SimBCR-v2\obj_files\MineOutputFaces.obj')
+
+    # mine_generate_uv_sphere_obj([-1, 1, 2], 2, 11, 5)
+
+    # atom_pos_container = pdb_to_obj(r'C:\Users\loren\PycharmProjects\SimBCR-v2\pdb_files\first_try.pdb',
+    #                                 r'C:\Users\loren\PycharmProjects\SimBCR-v2\obj_files\MineOutputFaces.obj')
+
+    try_adding_sphere_to_points()

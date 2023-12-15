@@ -12,6 +12,21 @@ atom_radius = {
     'Ca': 0.99,
 }
 
+"""relative to C radius"""
+relative_atom_radius = {
+    'H': 0.79,
+    'C': 1.0,
+    'N': 0.84,
+    'O': 0.72,
+    'P': 1.46,
+    'S': 1.52,
+    'Na': 2.78,
+    'K': 3.39,
+    'Cl': 2.61,
+    'Mg': 0.97,
+    'Ca': 1.48}
+
+
 residue_bond_table = {
     "SER": {
         "N": ["CA"],
