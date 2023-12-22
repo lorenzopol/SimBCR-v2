@@ -213,10 +213,28 @@ class PdbToObjConverter:
         for serial_number_atom_a, serial_number_atom_b in peptide_bonds_rel:
             obj_file_handle.write(f"f {serial_number_atom_a} {serial_number_atom_b}\n")
 
-    def dump_bond_containers_to_cylinder_file(self, obj_file_handle, inter_aa_bonds_rel, peptide_bonds_rel):
+    def populate_v_f_bond_containers_to_cylinder_file(self, inter_aa_bonds_rel, peptide_bonds_rel):
+        v_container = []
+        f_container = []
         for index, (atom1_idx, atom2_idx) in enumerate(inter_aa_bonds_rel):
-            pos1 = self.all_atom_coords[atom1_idx]
-            pos2 = self.all_atom_coords[atom2_idx]
+            pos1 = self.all_atom_coords[atom1_idx-1]
+            pos2 = self.all_atom_coords[atom2_idx-1]
+            v_container, f_container = create_cylinder_obj(pos1, pos2, 0.1, 4, index, v_container, f_container)
+            last_idx = index
+
+        for index, (atom1_idx, atom2_idx) in enumerate(peptide_bonds_rel):
+            pos1 = self.all_atom_coords[atom1_idx-1]
+            pos2 = self.all_atom_coords[atom2_idx-1]
+            v_container, f_container = create_cylinder_obj(pos1, pos2, 0.1, 4, index + last_idx, v_container,
+                                                           f_container)
+        return v_container, f_container
+
+    @staticmethod
+    def dump_bond_containers_to_cylinder_file(obj_file_handle, v_container, f_container):
+        for point in v_container:
+            obj_file_handle.write(f"v {point[0]} {point[1]} {point[2]}\n")
+        for face in f_container:
+            obj_file_handle.write(f"f {face[0]} {face[1]} {face[2]}\n")
 
     # todo: should separate point clouds dumpers from sphere/cyl dumper
     def convert_atom_pos_from_coords(self, atom_coords_obj_output_filepath):
@@ -238,9 +256,15 @@ class PdbToObjConverter:
 
     def convert_bond_pos_to_cylinder(self, bond_coords_obj_output_filepath):
         inter_aa_bonds_rel = self.compute_inter_aa_bonds_relationship()
+        print(len(inter_aa_bonds_rel))
         peptide_bonds_rel = self.compute_peptide_bonds_relationship()
+        print(len(peptide_bonds_rel))
+        v_container, f_container = self.populate_v_f_bond_containers_to_cylinder_file(inter_aa_bonds_rel,
+                                                                                      peptide_bonds_rel)
+        print(len(v_container))
+        print(len(f_container))
         with open(bond_coords_obj_output_filepath, "w") as obj_file_handle:
-            self.dump_bond_containers_to_cylinder_file(obj_file_handle, inter_aa_bonds_rel, peptide_bonds_rel)
+            self.dump_bond_containers_to_cylinder_file(obj_file_handle, v_container, f_container)
 
 
 def rotation_matrix_from_axis_angle(axis, angle):
@@ -255,9 +279,10 @@ def rotation_matrix_from_axis_angle(axis, angle):
     ])
 
 
-def create_cylinder_obj(point1, point2, radius, num_segments, file_name="cylinder.obj"):
+def create_cylinder_obj(point1, point2, radius, num_segments, iteration, v_container, f_container):
+    starting_idx = num_segments * 2 * iteration
     # Calculate vector between the two points
-    direction = point2 - point1
+    direction = [p2 - p1 for p2, p1 in zip(point2, point1)]
     height = np.linalg.norm(direction)
 
     # Create an orthogonal vector to use as the axis for the cylinder
@@ -283,22 +308,22 @@ def create_cylinder_obj(point1, point2, radius, num_segments, file_name="cylinde
             vertices.append(point1 + rotated)
 
     # Write vertices to an OBJ file
-    with open(file_name, 'w') as file:
-        for vertex in vertices:
-            file.write(f"v {round(vertex[0], 2)} {round(vertex[1], 2)} {round(vertex[2], 2)}\n")
+    for vertex in vertices:
+        v_container.append((vertex[0], vertex[1], vertex[2]))
 
         # Define faces connecting the vertices
-        for i in range(num_segments - 1):
-            file.write(f"f {(2 * i) + 1} {(2 * i) + 2} {(2 * i) + 3}\n")
-            file.write(f"f {(2 * i) + 2} {(2 * i) + 3} {(2 * i) + 4}\n")
-        file.write(f"f {1} {2} {num_segments * 2}\n")
-        file.write(f"f {1} {num_segments * 2 - 1} {num_segments * 2}\n")
+    for i in range(num_segments-1):
+        f_container.append((starting_idx + (2 * i) + 1, starting_idx + (2 * i) + 2, starting_idx + (2 * i) + 3))
+        f_container.append((starting_idx + (2 * i) + 2, starting_idx + (2 * i) + 3, starting_idx + (2 * i) + 4))
+    f_container.append((1 + starting_idx, 2 + starting_idx, num_segments * 2 + starting_idx))
+    f_container.append((1 + starting_idx, num_segments * 2 - 1 + starting_idx, num_segments * 2 + starting_idx))
+    return v_container, f_container
 
 
 if __name__ == "__main__":
     # point1 = np.array([0, -2, 1])  # Replace with your first center point
     # point2 = np.array([1, 3, 5])  # Replace with your second center point
     # create_cylinder_obj(point1, point2, radius=1, num_segments=32, file_name="obj_files/cylinder.obj")
-    conv = PdbToObjConverter(r"C:\Users\loren\PycharmProjects\SimBCR-v2\pdb_files\first_try.pdb")
+    conv = PdbToObjConverter(r"C:\Users\loren\PycharmProjects\SimBCR-v2\pdb_files\tiny.pdb")
     conv.convert_atom_pos("obj_files/atom_coords.obj")
     conv.convert_bond_pos_to_cylinder("obj_files/bond_coords.obj")
