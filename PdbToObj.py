@@ -1,10 +1,8 @@
-import os
 from Bio.PDB import PDBParser
 import BiologicalConstants as bc
 from dataclasses import dataclass
 import math
 import numpy as np
-import mcubes
 
 
 @dataclass
@@ -217,16 +215,15 @@ class PdbToObjConverter:
         v_container = []
         f_container = []
         for index, (atom1_idx, atom2_idx) in enumerate(inter_aa_bonds_rel):
-            pos1 = self.all_atom_coords[atom1_idx-1]
-            pos2 = self.all_atom_coords[atom2_idx-1]
-            v_container, f_container = create_cylinder_obj(pos1, pos2, 0.1, 4, index, v_container, f_container)
+            pos1 = self.all_atom_coords[atom1_idx - 1]
+            pos2 = self.all_atom_coords[atom2_idx - 1]
+            v_container, f_container = my_create_cylinder_obj(pos1, pos2, 0.1, 4, index, v_container, f_container)
             last_idx = index
-
         for index, (atom1_idx, atom2_idx) in enumerate(peptide_bonds_rel):
-            pos1 = self.all_atom_coords[atom1_idx-1]
-            pos2 = self.all_atom_coords[atom2_idx-1]
-            v_container, f_container = create_cylinder_obj(pos1, pos2, 0.1, 4, index + last_idx, v_container,
-                                                           f_container)
+            pos1 = self.all_atom_coords[atom1_idx - 1]
+            pos2 = self.all_atom_coords[atom2_idx - 1]
+            v_container, f_container = my_create_cylinder_obj(pos1, pos2, 0.1, 4, index + last_idx, v_container,
+                                                              f_container)
         return v_container, f_container
 
     @staticmethod
@@ -256,74 +253,71 @@ class PdbToObjConverter:
 
     def convert_bond_pos_to_cylinder(self, bond_coords_obj_output_filepath):
         inter_aa_bonds_rel = self.compute_inter_aa_bonds_relationship()
-        print(len(inter_aa_bonds_rel))
         peptide_bonds_rel = self.compute_peptide_bonds_relationship()
-        print(len(peptide_bonds_rel))
         v_container, f_container = self.populate_v_f_bond_containers_to_cylinder_file(inter_aa_bonds_rel,
                                                                                       peptide_bonds_rel)
-        print(len(v_container))
-        print(len(f_container))
         with open(bond_coords_obj_output_filepath, "w") as obj_file_handle:
             self.dump_bond_containers_to_cylinder_file(obj_file_handle, v_container, f_container)
 
 
-def rotation_matrix_from_axis_angle(axis, angle):
-    c = np.cos(angle)
-    s = np.sin(angle)
-    t = 1 - c
-    x, y, z = axis
-    return np.array([
-        [t * x ** 2 + c, t * x * y - s * z, t * x * z + s * y],
-        [t * x * y + s * z, t * y ** 2 + c, t * y * z - s * x],
-        [t * x * z - s * y, t * y * z + s * x, t * z ** 2 + c]
-    ])
-
-
-def create_cylinder_obj(point1, point2, radius, num_segments, iteration, v_container, f_container):
+def my_create_cylinder_obj(point1, point2, radius, num_segments, iteration, v_container, f_container):
+    point1 = np.array(point1)
+    point2 = np.array(point2)
     starting_idx = num_segments * 2 * iteration
-    # Calculate vector between the two points
-    direction = [p2 - p1 for p2, p1 in zip(point2, point1)]
-    height = np.linalg.norm(direction)
+    theta = np.linspace(0, 2 * np.pi, num_segments)
 
-    # Create an orthogonal vector to use as the axis for the cylinder
-    # This vector will help in defining the circular cross-sections
-    orthogonal_vector = np.array([1, 0, 0])
-    if np.all(np.abs(orthogonal_vector - direction) < 1e-6):
-        orthogonal_vector = np.array([0, 1, 0])
+    m = len(radius) if isinstance(radius, list) else 1  # Check number of radius values
 
-    # Calculate the axis and create a rotation matrix
-    axis = np.cross(direction, orthogonal_vector)
-    axis = (axis / np.linalg.norm(axis))
-    angle = np.arccos(np.dot(direction, orthogonal_vector) / height)
-    rotation_matrix = rotation_matrix_from_axis_angle(axis, angle)
+    if m == 1:
+        radius = [radius, radius]
+        m = 2
 
-    # Generate vertices for the cylinder
-    vertices = []
-    for i in range(num_segments):
-        theta = 2 * np.pi * i / num_segments
-        x = radius * np.cos(theta)
-        y = radius * np.sin(theta)
-        for h in [0, height]:
-            rotated = np.dot(rotation_matrix, np.array([x, y, h]))
-            vertices.append(point1 + rotated)
+    X = np.zeros((m, num_segments))
+    Y = np.zeros((m, num_segments))
+    Z = np.zeros((m, num_segments))
 
-    # Write vertices to an OBJ file
-    for vertex in vertices:
-        v_container.append((vertex[0], vertex[1], vertex[2]))
+    v = (point2 - point1) / np.linalg.norm(point2 - point1)
+    R2 = np.random.rand(3)
+    x2 = v - R2 / np.dot(R2, v)
+    x2 /= np.linalg.norm(x2)
+    x3 = np.cross(v, x2)
+    x3 /= np.linalg.norm(x3)
 
-        # Define faces connecting the vertices
-    for i in range(num_segments-1):
-        f_container.append((starting_idx + (2 * i) + 1, starting_idx + (2 * i) + 2, starting_idx + (2 * i) + 3))
-        f_container.append((starting_idx + (2 * i) + 2, starting_idx + (2 * i) + 3, starting_idx + (2 * i) + 4))
-    f_container.append((1 + starting_idx, 2 + starting_idx, num_segments * 2 + starting_idx))
-    f_container.append((1 + starting_idx, num_segments * 2 - 1 + starting_idx, num_segments * 2 + starting_idx))
+    r1x, r1y, r1z = point1
+    r2x, r2y, r2z = point2
+    x2x, x2y, x2z = x2
+    x3x, x3y, x3z = x3
+
+    time = np.linspace(0, 1, m)
+
+    for j in range(m):
+        t = time[j]
+        X[j, :] = r1x + (r2x - r1x) * t + radius[j] * np.cos(theta) * x2x + radius[j] * np.sin(theta) * x3x
+        Y[j, :] = r1y + (r2y - r1y) * t + radius[j] * np.cos(theta) * x2y + radius[j] * np.sin(theta) * x3y
+        Z[j, :] = r1z + (r2z - r1z) * t + radius[j] * np.cos(theta) * x2z + radius[j] * np.sin(theta) * x3z
+    vertex = []
+    for ext in range(len(X)):
+        for idx in range(len(X[ext])):
+            v_container.append((X[ext][idx], Y[ext][idx], Z[ext][idx]))
+    for i in range(1, num_segments):
+        f_container.append((starting_idx + i, starting_idx + i + 1, starting_idx + num_segments + i))
+        f_container.append((starting_idx + i + 1, starting_idx + num_segments + i, starting_idx + num_segments + i + 1))
+    f_container.append((starting_idx + 1, starting_idx + num_segments, starting_idx + 2 * num_segments))
+    f_container.append((starting_idx + 1, starting_idx + num_segments + 1, starting_idx + 2 * num_segments))
     return v_container, f_container
 
 
 if __name__ == "__main__":
-    # point1 = np.array([0, -2, 1])  # Replace with your first center point
-    # point2 = np.array([1, 3, 5])  # Replace with your second center point
-    # create_cylinder_obj(point1, point2, radius=1, num_segments=32, file_name="obj_files/cylinder.obj")
-    conv = PdbToObjConverter(r"C:\Users\loren\PycharmProjects\SimBCR-v2\pdb_files\tiny.pdb")
+    # g_point1 = np.array([-0.5, 3, 0])  # Replace with your first center point
+    # g_point2 = np.array([0, 1, 2])  # Replace with your second center point
+#
+    # g_v_container, g_f_container = my_create_cylinder_obj(g_point1, g_point2, 1, 32, 0, [], [])
+    # with open(r"C:\Users\loren\PycharmProjects\SimBCR-v2\obj_files\cylinder.obj", "w") as file:
+    #     for g_point in g_v_container:
+    #         file.write(f"v {g_point[0]} {g_point[1]} {g_point[2]}\n")
+    #     for g_face in g_f_container:
+    #         file.write(f"f {g_face[0]} {g_face[1]} {g_face[2]}\n")
+
+    conv = PdbToObjConverter(r"C:\Users\loren\PycharmProjects\SimBCR-v2\pdb_files\first_try.pdb")
     conv.convert_atom_pos("obj_files/atom_coords.obj")
     conv.convert_bond_pos_to_cylinder("obj_files/bond_coords.obj")
