@@ -8,6 +8,7 @@ import pandas as pd
 import ProteinFolders as pf
 from Sequences import Sequences
 from InputParser import InputParser
+from PdbToObj import PdbToObjConverter, PdbParser3D
 
 warnings.filterwarnings("error")
 
@@ -42,19 +43,24 @@ def convert_cdr3range_to_std(cdr3_start, cdr3_end) -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--number_of_seqs", help="[integer], specify the desired number of sequence. ", default=69,
-                        required=False)
-    parser.add_argument("--species", help="specify the desired specie [hs, mm]", default="hs", required=False)
+    # parser init
+    input_parser = argparse.ArgumentParser()
+    input_parser.add_argument("--number_of_seqs", help="[integer], specify the desired number of sequence. ",
+                              default=69,
+                              required=False)
+    input_parser.add_argument("--species", help="specify the desired specie [hs, mm]", default="hs", required=False)
 
     # todo add choices = [ig, tr]
-    parser.add_argument("--receptor", help="specify the desired receptor [ig, tr]", default="ig", required=False)
+    input_parser.add_argument("--receptor", help="specify the desired receptor [ig, tr]", default="ig", required=False)
 
     # todo add choices = [h, l, k, a, b]
-    parser.add_argument("--chain", help="specify the desired chain [h, l, k, a, b]", default="h", required=False)
-    parser.add_argument("--name_repertoire", help="specify the name of the repertoire. If in doubt, leave as default",
-                        default=f"NA", required=False)
-    args = parser.parse_args()
+    input_parser.add_argument("--chain", help="specify the desired chain [h, l, k, a, b]", default="h", required=False)
+    input_parser.add_argument("--name_repertoire",
+                              help="specify the name of the repertoire. If in doubt, leave as default",
+                              default=f"NA", required=False)
+
+    # args parsing & seq sim
+    args = input_parser.parse_args()
     mainR_parser = InputParser(args)
     mainR_parser.parse_and_modify_mainR()
 
@@ -69,9 +75,16 @@ def main():
     dna_light_chain = "".join([dna_variable_sequence, str(Sequences.DNA_IGG1_CH1).lower()])
     aa_light_chain = Bio.Seq.translate(Bio.Seq.transcribe(dna_light_chain))
 
+    # protein folding
     path_to_pdb = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pdb_files/first_try.pdb")
     folder = pf.ESMatlas(aa_light_chain)
-    folder.fold_and_show_pdb(path_to_pdb, "CDR", cdr3_range)
+    folder.fold(path_to_pdb)
+
+    # pdb to obj
+    _3d_parser = PdbParser3D(path_to_pdb)
+    conv = PdbToObjConverter(_3d_parser)
+    conv.convert_atom_pos_from_coords("obj_files/atom_coords.obj")
+    conv.convert_bond_pos_to_cylinder("obj_files/bond_coords.obj")
 
 
 if __name__ == "__main__":

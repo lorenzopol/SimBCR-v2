@@ -129,15 +129,36 @@ class GeometryBuilder:
 
 class ObjWriters:
     @staticmethod
-    def dump_v_f_container_to_obj_file(obj_file_handle, v_container, f_container):
+    def dump_v_f_container_to_obj_file(obj_file_handle, v_container: list | tuple, f_container):
+        """general dumper for obj file.
+        Expected input:
+            :arg obj_file_handle, file handle from with statement
+            :arg v_container, iterable that stores the XYZ position of the vertices.
+                ex -> v_container = [[0.0, 1.0, -2.0], [1.2, -3.4, 1.0], ...]
+            :arg f_container, iterable that stores the indexes of the vertices in v_container that form a face
+                ex -> f_container = [[1, 2, 3], [2, 3, 4]]"""
         for point in v_container:
             obj_file_handle.write(f"v {point[0]} {point[1]} {point[2]}\n")
         for face in f_container:
             obj_file_handle.write(f"f {face[0]} {face[1]} {face[2]}\n")
 
+    @staticmethod
+    def dump_atom_pos_point_cloud(obj_file_handle, parser3d):
+        """dump point cloud representation of the atom's position of a 3dparser"""
+        for point in parser3d.all_atom_coords:
+            obj_file_handle.write(f"v {point[0]} {point[1]} {point[2]}\n")
+
+    @staticmethod
+    def dump_bond_containers_to_obj_file(obj_file_handle, parser3d):
+        """dump the stick representation of the bonds in a 3dparser"""
+        for serial_number_atom_a, serial_number_atom_b in parser3d.inter_aa_bonds_rel:
+            obj_file_handle.write(f"f {serial_number_atom_a} {serial_number_atom_b}\n")
+        for serial_number_atom_a, serial_number_atom_b in parser3d.peptide_bonds_rel:
+            obj_file_handle.write(f"f {serial_number_atom_a} {serial_number_atom_b}\n")
+
 
 @dataclass
-class PdbToObjConverter:
+class PdbParser3D:
     pdb_file_path: str
 
     def __post_init__(self):
@@ -147,6 +168,8 @@ class PdbToObjConverter:
         self.all_atom_coords = self.get_all_atom_coords()
         self.all_atoms = self.get_all_atoms()
         self.back_bone_atom_coords = self.get_only_back_bone_atom_coords()
+        self.inter_aa_bonds_rel = self.compute_inter_aa_bonds_relationship()
+        self.peptide_bonds_rel = self.compute_peptide_bonds_relationship()
 
     def get_all_atoms(self):
         all_atom = []
@@ -227,9 +250,14 @@ class PdbToObjConverter:
             peptide_bonds_relationship_container.append((c_atom.serial_number, n_atom.serial_number))
         return peptide_bonds_relationship_container
 
+
+class PdbToObjConverter:
+    def __init__(self, parser3d: PdbParser3D):
+        self.parser3d = parser3d
+
     @staticmethod
-    def instance_spheres_from_given_atom_coords_list(atom_pos_container: tuple | list, radius,
-                                                     n_slices, n_stack):
+    def instance_spheres_on_atom_coords_list(atom_pos_container: tuple | list, radius,
+                                             n_slices, n_stack):
         """calculate vertex and faces based on atom_pos.
                 > single use
                 calculate_sphere_on_atom_coord(atom_coords=[[x0, y0, z0]], radius=0.2,
@@ -254,77 +282,39 @@ class PdbToObjConverter:
                     atom_pos, radius, n_slices, n_stack, index, v_container, f_container)
         return v_container, f_container
 
-    def instance_spheres_on_parent_atom_coords_list(self):
-        """uses raw input from .pdb files given at class creation. For instancing on custom atom pos refer to
-        PdbToObjConverter.instance_spheres_from_given_atom_coords_list"""
-        v_container = []
-        f_container = []
-        for index, atom in enumerate(self.all_atoms):
-            v_container, f_container = GeometryBuilder.calculate_sphere_on_coord(
-                atom.coord, bc.relative_atom_radius.get(atom.element) / 4, 7, 7, index, v_container, f_container)
-        return v_container, f_container
-
-    # todo: should separate point clouds dumpers from sphere/cyl dumper
     def convert_atom_pos_from_coords(self, atom_coords_obj_output_filepath):
-        v_container, f_container = self.instance_spheres_from_given_atom_coords_list(
-            self.all_atom_coords, 0.2, 11, 5)
-        with open(atom_coords_obj_output_filepath, "w") as obj_file_handle:
-            ObjWriters.dump_v_f_container_to_obj_file(obj_file_handle, v_container, f_container)
-
-    def write_atoms_sphere_to_obj(self, atom_coords_obj_output_filepath):
-        v_container, f_container = self.instance_spheres_on_parent_atom_coords_list()
+        v_container, f_container = self.instance_spheres_on_atom_coords_list(
+            self.parser3d.all_atom_coords, 0.2, 11, 5)
         with open(atom_coords_obj_output_filepath, "w") as obj_file_handle:
             ObjWriters.dump_v_f_container_to_obj_file(obj_file_handle, v_container, f_container)
 
     # =========================================== BONDS ========================================
-
-    def populate_v_f_bond_containers_to_cylinder_file(self, inter_aa_bonds_rel, peptide_bonds_rel):
+    def instance_cylinder_on_bond_coords_list(self, inter_aa_bonds_rel, peptide_bonds_rel):
         v_container = []
         f_container = []
         for index, (atom1_idx, atom2_idx) in enumerate(inter_aa_bonds_rel):
-            pos1 = self.all_atom_coords[atom1_idx - 1]
-            pos2 = self.all_atom_coords[atom2_idx - 1]
-            v_container, f_container = GeometryBuilder.calculate_cylinder_from_caps_pos(pos1, pos2, 0.1, 4, index, v_container, f_container)
+            pos1 = self.parser3d.all_atom_coords[atom1_idx - 1]
+            pos2 = self.parser3d.all_atom_coords[atom2_idx - 1]
+            v_container, f_container = GeometryBuilder.calculate_cylinder_from_caps_pos(pos1, pos2, 0.1, 4, index,
+                                                                                        v_container, f_container)
             last_idx = index
         for index, (atom1_idx, atom2_idx) in enumerate(peptide_bonds_rel):
-            pos1 = self.all_atom_coords[atom1_idx - 1]
-            pos2 = self.all_atom_coords[atom2_idx - 1]
-            v_container, f_container = GeometryBuilder.calculate_cylinder_from_caps_pos(pos1, pos2, 0.1, 4, index + last_idx, v_container,
+            pos1 = self.parser3d.all_atom_coords[atom1_idx - 1]
+            pos2 = self.parser3d.all_atom_coords[atom2_idx - 1]
+            v_container, f_container = GeometryBuilder.calculate_cylinder_from_caps_pos(pos1, pos2, 0.1, 4,
+                                                                                        index + last_idx, v_container,
                                                                                         f_container)
         return v_container, f_container
 
-    @staticmethod
-    def dump_bond_containers_to_cylinder_file(obj_file_handle, v_container, f_container):
-        for point in v_container:
-            obj_file_handle.write(f"v {point[0]} {point[1]} {point[2]}\n")
-        for face in f_container:
-            obj_file_handle.write(f"f {face[0]} {face[1]} {face[2]}\n")
-
     def convert_bond_pos_to_cylinder(self, bond_coords_obj_output_filepath):
-        inter_aa_bonds_rel = self.compute_inter_aa_bonds_relationship()
-        peptide_bonds_rel = self.compute_peptide_bonds_relationship()
-        v_container, f_container = self.populate_v_f_bond_containers_to_cylinder_file(inter_aa_bonds_rel,
-                                                                                      peptide_bonds_rel)
+        v_container, f_container = self.instance_cylinder_on_bond_coords_list(self.parser3d.inter_aa_bonds_rel,
+                                                                              self.parser3d.peptide_bonds_rel)
         with open(bond_coords_obj_output_filepath, "w") as obj_file_handle:
-            self.dump_bond_containers_to_cylinder_file(obj_file_handle, v_container, f_container)
-
-    def dump_bond_containers_to_obj_file(self, obj_file_handle, inter_aa_bonds_rel, peptide_bonds_rel):
-        for point in self.all_atom_coords:
-            obj_file_handle.write(f"v {point[0]} {point[1]} {point[2]}\n")
-
-        for serial_number_atom_a, serial_number_atom_b in inter_aa_bonds_rel:
-            obj_file_handle.write(f"f {serial_number_atom_a} {serial_number_atom_b}\n")
-        for serial_number_atom_a, serial_number_atom_b in peptide_bonds_rel:
-            obj_file_handle.write(f"f {serial_number_atom_a} {serial_number_atom_b}\n")
-
-    def convert_bond_pos(self, bond_coords_obj_output_filepath):
-        inter_aa_bonds_rel = self.compute_inter_aa_bonds_relationship()
-        peptide_bonds_rel = self.compute_peptide_bonds_relationship()
-        with open(bond_coords_obj_output_filepath, "w") as obj_file_handle:
-            self.dump_bond_containers_to_obj_file(obj_file_handle, inter_aa_bonds_rel, peptide_bonds_rel)
+            ObjWriters.dump_v_f_container_to_obj_file(obj_file_handle, v_container, f_container)
 
 
 if __name__ == "__main__":
-    conv = PdbToObjConverter(r"C:\Users\loren\PycharmProjects\SimBCR-v2\pdb_files\first_try.pdb")
-    conv.write_atoms_sphere_to_obj("obj_files/atom_coords.obj")
+    parser = PdbParser3D(r"C:\Users\loren\PycharmProjects\SimBCR-v2\pdb_files\first_try.pdb")
+    conv = PdbToObjConverter(parser)
+    conv.convert_atom_pos_from_coords("obj_files/atom_coords.obj")
     conv.convert_bond_pos_to_cylinder("obj_files/bond_coords.obj")
