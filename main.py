@@ -1,7 +1,7 @@
 import os
 import warnings
 import argparse
-
+from PdbGraphicEngine.PdbGraphicEngine import *
 import Bio.Seq
 import pandas as pd
 
@@ -83,8 +83,11 @@ def main():
     # pdb to obj
     _3d_parser = PdbParser3D(path_to_pdb)
     conv = PdbToObjConverter(_3d_parser)
-    conv.convert_atom_pos_from_coords("obj_files/atom_coords.obj")
-    conv.convert_bond_pos_to_cylinder("obj_files/bond_coords.obj")
+    conv.convert_atom_pos_from_coords("obj_files/atom_coords.obj", radius=.5, n_slices=11, n_stack=5,
+                                      fake_normals=True, fake_texture=True)
+    conv.convert_bond_pos_to_cylinder("obj_files/bond_coords.obj", radius=0.25, num_segments=4,
+                                      fake_normals=True, fake_texture=True)
+    GraphicsEngine().run()
 
 
 if __name__ == "__main__":
