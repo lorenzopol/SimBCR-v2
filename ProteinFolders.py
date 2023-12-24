@@ -5,7 +5,6 @@ import os
 from dataclasses import dataclass
 
 from creds import Credentials
-from PDBHandler import PDBHandler as PDBh
 import utils as u
 
 
@@ -21,7 +20,7 @@ class ESMatlas:
 
     @staticmethod
     def _convert_api_response_to_pdb_file(pdb_content: str, pdb_output_filepath: str):
-        assert PDBh.is_valid_pdb(
+        assert u.is_valid_pdb(
             pdb_content), f"\n[ERROR]: ESMatlas did not return a valid pdb file. \n ===== RETURN OUTPUT =====\n{pdb_content}"
 
         with open(pdb_output_filepath, "w") as cfile:
@@ -36,7 +35,7 @@ class ESMatlas:
                           mode=None, cdr3_range=None):
         """extend self.fold and shows its result"""
         self.fold(pdb_output_filepath)
-        PDBh.show_3D_from_pdb(pdb_output_filepath, mode, cdr3_range)
+        u.show_3D_from_pdb(pdb_output_filepath, mode, cdr3_range)
 
 
 @dataclass
@@ -113,4 +112,4 @@ class Swiss:
                           mode=None, cdr3_range=None):
         """extend self.fold and shows its result"""
         output_filename = self.fold(tile)
-        PDBh.show_3D_from_pdb(output_filename, mode, cdr3_range)
+        u.show_3D_from_pdb(output_filename, mode, cdr3_range)

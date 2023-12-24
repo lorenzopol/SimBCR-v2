@@ -1,7 +1,7 @@
 import os
 import gzip
 from Bio.PDB import PDBParser
-from BiologicalConstants import *
+from io import StringIO
 
 
 def handle_gzip(look_up_directory):
@@ -25,56 +25,66 @@ def handle_gzip(look_up_directory):
     return output_filename
 
 
-def pdb_to_obj(pdb_file, output_file, return_pos=False,
-               add_relative_radius=False) -> list[tuple[int, int, int]] | None:
-    parser = PDBParser()
-    structure = parser.get_structure('protein', pdb_file)
+def is_valid_pdb(input_string):
+    try:
+        parser = PDBParser()
+        pdb_file = StringIO(input_string)
+        _ = parser.get_structure('temp_structure', pdb_file)
+        return True  # Valid PDB format
+    except Exception as e:
+        print(f"Not a valid PDB file: {e}")
+        return False  # Not a valid PDB format
 
-    atom_coord = []
 
-    with open(output_file, 'w') as obj_file:
-        for model in structure:
-            for chain in model:
-                for residue in chain:
-                    for atom in residue:
-                        x, y, z = atom.coord
-                        if return_pos:
-                            atom_coord.append((x, y, z))
-                        obj_file.write(f"v {x} {y} {z}\n")
+def show_3D_from_pdb(filename, mode=None, cdr3_range=None):
+    """expects a .pdb files and renders it in html-ipynb"""
+    assert ".pdb" in filename, f"ERROR: pdb_render expected a .pdb file. {filename} was given"
+    os.system(f"python show_3D.py {filename} --mode {mode} --cdr3 {cdr3_range}")
 
-        # Write faces data to OBJ file
-        obj_file.write("g Protein\n")
-        obj_file.write("s off\n")
-        # backbone edge
-        # for i in range(len(back_bone_atom_id_list) - 1):
-        #     obj_file.write(f"f {back_bone_atom_id_list[i]} {back_bone_atom_id_list[i+1]}\n")
+def parse_pdb_content(pdb_file_path):
+    # Create a PDB parser
+    parser = PDBParser(QUIET=True)
 
-        for model in structure:
-            for chain in model:
-                for residue_idx, residue in enumerate(chain):
-                    bond_table = residue_bond_table[residue.resname]
+    # Parse the PDB file
+    structure = parser.get_structure('pdb_structure', pdb_file_path)
+    print(f"{structure.center_of_mass() = }")
 
-                    # compute inter-aa bonds
-                    for atom1, binds_to_list in bond_table.items():
-                        for atom2 in binds_to_list:
-                            print(residue.child_dict[atom2].radius)
-                            obj_file.write(
-                                f"f {residue.child_dict[atom1].serial_number} {residue.child_dict[atom2].serial_number}\n")
+    for model in structure:
+        print(f"{model.child_dict = }")
 
-                    if residue_idx == len(chain) - 1:
-                        break
-        # compute peptide bonds
-        residues = tuple(structure.get_residues())
-        for idx in range(1, len(residues)):
-            prev_aa = residues[idx - 1].child_dict
-            current_aa = residues[idx].child_dict
-            c_atom = prev_aa.get("C")
-            n_atom = current_aa.get("N")
-            assert c_atom is not None and n_atom is not None, f"{residues[idx - 1]} at index {idx - 1} does not have a C " \
-                                                              f"atom or {residues[idx]} at index {idx} does not have a " \
-                                                              f"n atom. Check pdb file"
+        for chain in model:
+            print(f"{chain.get_unpacked_list() = }")
 
-            obj_file.write(f"f {c_atom.serial_number} {n_atom.serial_number}\n")
+            for residue in chain:
+                print(f"{residue}")
+                print(f"{residue.child_dict = }")
 
-    if return_pos:
-        return atom_coord
+                for atom in residue:
+                    print(f"    {atom.name = }")
+                    if hasattr(atom, "charge"):
+                        print(f"    {atom.charge = }")
+                    print(f"    {atom.coord = }")
+                    print(f"    {atom.radius = }")
+
+                    print(f"    {atom.altloc = }")
+
+                    if hasattr(atom, "anisou"):
+                        print(f"    {atom.anisou = }")
+
+                    if hasattr(atom, "sigatm"):
+                        print(f"    {atom.sigatm = }")
+
+                    if hasattr(atom, "siguij"):
+                        print(f"    {atom.siguij = }")
+
+                    print(f"    {atom.bfactor = }")
+
+                    print(f"    {atom.level = }")
+                    print(f"    {atom.occupancy = }")
+                    print(f"    {atom.parent = }")
+                    if hasattr(atom, "vector"):
+                        print(f"    {atom.vector = }")
+
+                    print(f"    {atom.is_disordered() = }")
+                    print("")
+                print("")
