@@ -78,11 +78,3 @@ def pdb_to_obj(pdb_file, output_file, return_pos=False,
 
     if return_pos:
         return atom_coord
-
-
-if __name__ == "__main__":
-    ...
-    # mine_generate_uv_sphere_obj([-1, 1, 2], 2, 11, 5)
-
-    # atom_pos_container = pdb_to_obj(r'C:\Users\loren\PycharmProjects\SimBCR-v2\pdb_files\first_try.pdb',
-    #                                 r'C:\Users\loren\PycharmProjects\SimBCR-v2\obj_files\MineOutputFaces.obj')

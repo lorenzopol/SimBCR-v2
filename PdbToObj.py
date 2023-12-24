@@ -129,18 +129,34 @@ class GeometryBuilder:
 
 class ObjWriters:
     @staticmethod
-    def dump_v_f_container_to_obj_file(obj_file_handle, v_container: list | tuple, f_container):
+    def dump_v_f_container_to_obj_file(obj_file_handle, v_container: list | tuple, f_container: list | tuple,
+                                       fake_normals: bool, fake_texture: bool):
         """general dumper for obj file.
         Expected input:
-            :arg obj_file_handle, file handle from with statement
-            :arg v_container, iterable that stores the XYZ position of the vertices.
+            :param obj_file_handle: file handle from with statement
+            :param v_container: iterable that stores the XYZ position of the vertices.
                 ex -> v_container = [[0.0, 1.0, -2.0], [1.2, -3.4, 1.0], ...]
-            :arg f_container, iterable that stores the indexes of the vertices in v_container that form a face
-                ex -> f_container = [[1, 2, 3], [2, 3, 4]]"""
+            :param f_container: iterable that stores the indexes of the vertices in v_container that form a face
+                ex -> f_container = [[1, 2, 3], [2, 3, 4]]
+            :param fake_normals: insert fake normal vector for each face
+            :param fake_texture: insert fake UV coords for each vertex
+                """
+
         for point in v_container:
             obj_file_handle.write(f"v {point[0]} {point[1]} {point[2]}\n")
+        if fake_texture:
+            fake_texture_idx = 1
+            obj_file_handle.write(f"vt 0.00 0.00\n")
+
+        if fake_normals:
+            fake_normal_idx = 1
+            obj_file_handle.write(f"vn 0.00 0.00 0.00\n")
+
         for face in f_container:
-            obj_file_handle.write(f"f {face[0]} {face[1]} {face[2]}\n")
+            if fake_normals and fake_texture:
+                obj_file_handle.write(f"f {face[0]}/{fake_texture_idx}/{fake_normal_idx}"
+                                      f" {face[1]}/{fake_texture_idx}/{fake_normal_idx}"
+                                      f" {face[2]}/{fake_texture_idx}/{fake_normal_idx}\n")
 
     @staticmethod
     def dump_atom_pos_point_cloud(obj_file_handle, parser3d):
@@ -273,7 +289,7 @@ class PdbToObjConverter:
         # there is only 1 atom to draw
         if len(atom_pos_container) == 1:
             v_container, f_container = GeometryBuilder.calculate_sphere_on_coord(
-                atom_pos_container, radius, n_slices, n_stack, 0)
+                atom_pos_container[0], radius, n_slices, n_stack, 0)
         else:
             v_container = []
             f_container = []
@@ -282,39 +298,53 @@ class PdbToObjConverter:
                     atom_pos, radius, n_slices, n_stack, index, v_container, f_container)
         return v_container, f_container
 
-    def convert_atom_pos_from_coords(self, atom_coords_obj_output_filepath):
+    def convert_atom_pos_from_coords(self, atom_coords_obj_output_filepath, radius, n_slices, n_stack,
+                                     fake_normals, fake_texture):
         v_container, f_container = self.instance_spheres_on_atom_coords_list(
-            self.parser3d.all_atom_coords, 0.2, 11, 5)
+            self.parser3d.all_atom_coords, radius, n_slices, n_stack)
         with open(atom_coords_obj_output_filepath, "w") as obj_file_handle:
-            ObjWriters.dump_v_f_container_to_obj_file(obj_file_handle, v_container, f_container)
+            ObjWriters.dump_v_f_container_to_obj_file(obj_file_handle, v_container, f_container,
+                                                      fake_normals, fake_texture)
 
     # =========================================== BONDS ========================================
-    def instance_cylinder_on_bond_coords_list(self, inter_aa_bonds_rel, peptide_bonds_rel):
+    def instance_cylinder_on_bond_coords_list(self, radius, num_segments,
+                                              inter_aa_bonds_rel, peptide_bonds_rel):
         v_container = []
         f_container = []
         for index, (atom1_idx, atom2_idx) in enumerate(inter_aa_bonds_rel):
             pos1 = self.parser3d.all_atom_coords[atom1_idx - 1]
             pos2 = self.parser3d.all_atom_coords[atom2_idx - 1]
-            v_container, f_container = GeometryBuilder.calculate_cylinder_from_caps_pos(pos1, pos2, 0.1, 4, index,
+            v_container, f_container = GeometryBuilder.calculate_cylinder_from_caps_pos(pos1, pos2, radius,
+                                                                                        num_segments, index,
                                                                                         v_container, f_container)
             last_idx = index
         for index, (atom1_idx, atom2_idx) in enumerate(peptide_bonds_rel):
             pos1 = self.parser3d.all_atom_coords[atom1_idx - 1]
             pos2 = self.parser3d.all_atom_coords[atom2_idx - 1]
-            v_container, f_container = GeometryBuilder.calculate_cylinder_from_caps_pos(pos1, pos2, 0.1, 4,
+            v_container, f_container = GeometryBuilder.calculate_cylinder_from_caps_pos(pos1, pos2, radius,
+                                                                                        num_segments,
                                                                                         index + last_idx, v_container,
                                                                                         f_container)
         return v_container, f_container
 
-    def convert_bond_pos_to_cylinder(self, bond_coords_obj_output_filepath):
-        v_container, f_container = self.instance_cylinder_on_bond_coords_list(self.parser3d.inter_aa_bonds_rel,
-                                                                              self.parser3d.peptide_bonds_rel)
+    def convert_bond_pos_to_cylinder(self, bond_coords_obj_output_filepath, radius, num_segments,
+                                     fake_normals, fake_texture):
+        v_container, f_container = self.instance_cylinder_on_bond_coords_list(
+            radius, num_segments+1,
+            self.parser3d.inter_aa_bonds_rel, self.parser3d.peptide_bonds_rel)
         with open(bond_coords_obj_output_filepath, "w") as obj_file_handle:
-            ObjWriters.dump_v_f_container_to_obj_file(obj_file_handle, v_container, f_container)
+            ObjWriters.dump_v_f_container_to_obj_file(obj_file_handle, v_container, f_container,
+                                                      fake_normals, fake_texture)
 
 
 if __name__ == "__main__":
     parser = PdbParser3D(r"C:\Users\loren\PycharmProjects\SimBCR-v2\pdb_files\first_try.pdb")
     conv = PdbToObjConverter(parser)
-    conv.convert_atom_pos_from_coords("obj_files/atom_coords.obj")
-    conv.convert_bond_pos_to_cylinder("obj_files/bond_coords.obj")
+    conv.convert_atom_pos_from_coords("obj_files/atom_coords.obj", radius=.5, n_slices=11, n_stack=5,
+                                      fake_normals=True, fake_texture=True)
+    conv.convert_bond_pos_to_cylinder("obj_files/bond_coords.obj", radius=0.25, num_segments=4,
+                                      fake_normals=True, fake_texture=True)
+
+    # v_cont, f_cont = GeometryBuilder.calculate_sphere_on_coord([0, 0, 0], 2, 32, 32)
+    # with open("obj_files/my_sphere.obj", "w") as file:
+    #     ObjWriters.dump_v_f_container_to_obj_file(file, v_cont, f_cont, fake_normals=True, fake_texture=True)
