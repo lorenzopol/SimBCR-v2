@@ -58,6 +58,9 @@ def main():
     input_parser.add_argument("--name_repertoire",
                               help="specify the name of the repertoire. If in doubt, leave as default",
                               default=f"NA", required=False)
+    input_parser.add_argument("--renderer", help="choose if you want web-based rendering or if you want to render the "
+                                                 "pdb file locally",
+                              default="local", required=False, choices=["local", "web"])
 
     # args parsing & seq sim
     args = input_parser.parse_args()
@@ -78,16 +81,18 @@ def main():
     # protein folding
     path_to_pdb = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pdb_files/first_try.pdb")
     folder = pf.ESMatlas(aa_light_chain)
-    folder.fold(path_to_pdb)
 
-    # pdb to obj
-    _3d_parser = PdbParser3D(path_to_pdb)
-    conv = PdbToObjConverter(_3d_parser)
-    conv.convert_atom_pos_from_coords("obj_files/atom_coords.obj", radius=.5, n_slices=11, n_stack=5,
-                                      fake_normals=True, fake_texture=True)
-    conv.convert_bond_pos_to_cylinder("obj_files/bond_coords.obj", radius=0.25, num_segments=4,
-                                      fake_normals=True, fake_texture=True)
-    GraphicsEngine().run()
+    if args.renderer == "local":
+        folder.fold(path_to_pdb)
+        _3d_parser = PdbParser3D(path_to_pdb)
+        conv = PdbToObjConverter(_3d_parser)
+        conv.convert_atom_pos_from_coords("obj_files/atom_coords.obj", radius=.5, n_slices=11, n_stack=5,
+                                          fake_normals=True, fake_texture=True)
+        conv.convert_bond_pos_to_cylinder("obj_files/bond_coords.obj", radius=0.25, num_segments=4,
+                                          fake_normals=True, fake_texture=True)
+        GraphicsEngine().run()
+    elif args.renderer == "web":
+        folder.fold_and_show_pdb(path_to_pdb, "CDR", cdr3_range)
 
 
 if __name__ == "__main__":
