@@ -42,7 +42,7 @@ def convert_cdr3range_to_std(cdr3_start, cdr3_end) -> str:
     return f"{cdr3_start}-{cdr3_end}"
 
 
-def main():
+def main(rebuild=False, skip_to_render=True):
     # parser init
     input_parser = argparse.ArgumentParser()
     input_parser.add_argument("--number_of_seqs", help="[integer], specify the desired number of sequence. ",
@@ -68,7 +68,7 @@ def main():
     mainR_parser.parse_and_modify_mainR()
 
     dna_variable_sequence, aa_variable_sequence, sampled_seq_raw_data = get_variable_sequence_form_immuneSIM(
-        rebuild=True)
+        rebuild=rebuild)
 
     aa_junction = sampled_seq_raw_data["junction_aa"]
     cdr3_start, cdr3_end = calculate_cdr3_range(aa_variable_sequence, aa_junction)
@@ -83,17 +83,18 @@ def main():
     folder = pf.ESMatlas(aa_light_chain)
 
     if args.renderer == "local":
-        folder.fold(path_to_pdb)
-        _3d_parser = PdbParser3D(path_to_pdb)
-        conv = PdbToObjConverter(_3d_parser)
-        conv.convert_atom_pos_from_coords("obj_files/atom_coords.obj", radius=.5, n_slices=11, n_stack=5,
-                                          fake_normals=True, fake_texture=True)
-        conv.convert_bond_pos_to_cylinder("obj_files/bond_coords.obj", radius=0.25, num_segments=4,
-                                          fake_normals=True, fake_texture=True)
+        if not skip_to_render:
+            folder.fold(path_to_pdb)
+            _3d_parser = PdbParser3D(path_to_pdb)
+            conv = PdbToObjConverter(_3d_parser)
+            conv.convert_atom_pos_from_coords("obj_files/atom_coords.obj", radius=.5, n_slices=11, n_stack=5,
+                                              fake_normals=True, fake_texture=True)
+            conv.convert_bond_pos_to_cylinder("obj_files/bond_coords.obj", radius=0.25, num_segments=4,
+                                              fake_normals=True, fake_texture=True)
         GraphicsEngine().run()
     elif args.renderer == "web":
         folder.fold_and_show_pdb(path_to_pdb, "CDR", cdr3_range)
 
 
 if __name__ == "__main__":
-    main()
+    main(rebuild=False, skip_to_render=True)
