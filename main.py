@@ -42,7 +42,7 @@ def convert_cdr3range_to_std(cdr3_start, cdr3_end) -> str:
     return f"{cdr3_start}-{cdr3_end}"
 
 
-def main(rebuild=False, skip_to_render=True):
+def main(rebuild, skip_to_render):
     # parser init
     input_parser = argparse.ArgumentParser()
     input_parser.add_argument("--number_of_seqs", help="[integer], specify the desired number of sequence. ",
