@@ -158,7 +158,7 @@ class GeometryBuilder:
                                        iteration=i,
                                        v_container=[], f_container=[])
         returns v_container and f_container with the correctly populated data for vertex and faces value for obj dump"""
-        assert not fake_normals and shade_smooth, "Can't generate fake normals with smooth shading. Set shade_smooth to False"
+        assert not (fake_normals and shade_smooth), "Can't generate fake normals with smooth shading. Set shade_smooth to False"
         nof_vertices = (10 * (4 ** subdiv) + 2)
         start_idx = nof_vertices * iteration
         middle_point_cache = {}
@@ -201,20 +201,28 @@ class GeometryBuilder:
                     vertex_to_normal_contrib[vertex_idx_2].append(face_normal)
                 else:
                     n_container.append(face_normal.tolist())
-        for vertex_idx, face_normals_contributions in vertex_to_normal_contrib.items():
-            acc = np.zeros((1, 3))
-            for face_normal in face_normals_contributions:
-                acc += face_normal
-            acc = (acc / len(face_normals_contributions))[0]
-            n_container.append(acc)
+        if shade_smooth:
+            for vertex_idx, face_normals_contributions in vertex_to_normal_contrib.items():
+                acc = np.zeros((1, 3))
+                for face_normal in face_normals_contributions:
+                    acc += face_normal
+                acc = (acc / len(face_normals_contributions))[0]
+                n_container.append(acc)
+
         # populate t_container
         if fake_texture:
-            t_container = [[0.00, 0.00, 1.00] for _ in f_container]
+            t_container = [[1.00, 0.00] for _ in v_container]
+        else:
+
+            t_container = [[iteration/len(v_container), 0.00] for _ in range(len(v_container))]
+
+        # update face idx
         for idx_face in range(len(f_container)):
             f_container[idx_face][0] = f_container[idx_face][0] + 1 + start_idx
             f_container[idx_face][1] = f_container[idx_face][1] + 1 + start_idx
             f_container[idx_face][2] = f_container[idx_face][2] + 1 + start_idx
 
+        # update vertex position
         for idx_vert in range(len(v_container)):
             v_container[idx_vert][0] = v_container[idx_vert][0] + position[0]
             v_container[idx_vert][1] = v_container[idx_vert][1] + position[1]
@@ -241,22 +249,22 @@ class ObjWriters:
 
         for point in v_container:
             obj_file_handle.write(f"v {point[0]} {point[1]} {point[2]}\n")
-        if True:
-            fake_texture_idx = 1
-            obj_file_handle.write(f"vt 0.00 0.00\n")
+
+        for vertex_texture in t_container:
+            obj_file_handle.write(f"vt {vertex_texture[0]} {vertex_texture[1]}\n")
 
         for normal in n_container:
             obj_file_handle.write(f"vn {normal[0]} {normal[1]} {normal[2]}\n")
         if shade_smoooth:
             for face in f_container:
-                obj_file_handle.write(f"f {face[0]}/{fake_texture_idx}/{face[0]}"
-                                      f" {face[1]}/{fake_texture_idx}/{face[1]}"
-                                      f" {face[2]}/{fake_texture_idx}/{face[2]}\n")
+                obj_file_handle.write(f"f {face[0]}/{face[0]}/{face[0]}"
+                                      f" {face[1]}/{face[1]}/{face[1]}"
+                                      f" {face[2]}/{face[2]}/{face[2]}\n")
         else:
             for face_idx, face in enumerate(f_container):
-                obj_file_handle.write(f"f {face[0]}/{fake_texture_idx}/{face_idx + 1}"
-                                      f" {face[1]}/{fake_texture_idx}/{face_idx + 1}"
-                                      f" {face[2]}/{fake_texture_idx}/{face_idx + 1}\n")
+                obj_file_handle.write(f"f {face[0]}/{face[0]}/{face_idx + 1}"
+                                      f" {face[1]}/{face[1]}/{face_idx + 1}"
+                                      f" {face[2]}/{face[2]}/{face_idx + 1}\n")
 
     @staticmethod
     def dump_QUADS_containers(obj_file_handle, v_container: list | tuple, f_container: list | tuple,
@@ -277,7 +285,7 @@ class ObjWriters:
             obj_file_handle.write(f"v {point[0]} {point[1]} {point[2]}\n")
         if True:
             fake_texture_idx = 1
-            obj_file_handle.write(f"vt 0.00 0.00\n")
+            obj_file_handle.write(f"vt 0.00 1.00\n")
 
         for normal in n_container:
             obj_file_handle.write(f"vn {normal[0]} {normal[1]} {normal[2]}\n")
@@ -459,7 +467,7 @@ class PdbToObjConverter:
             v_container, f_container, n_container, t_container = GeometryBuilder.calculate_cylinder_from_caps_pos(
                 pos1, pos2, radius, num_segments, index,
                 v_container, f_container, n_container, t_container, fake_normals, fake_texture)
-            last_idx = index
+        last_idx = len(inter_aa_bonds_rel) - 1
         for index, (atom1_idx, atom2_idx) in enumerate(peptide_bonds_rel):
             pos1 = self.parser3d.all_atom_coords[atom1_idx - 1]
             pos2 = self.parser3d.all_atom_coords[atom2_idx - 1]
@@ -479,10 +487,11 @@ class PdbToObjConverter:
 
 
 if __name__ == "__main__":
+    # todo smooth shading for cylinders?
     parser = PdbParser3D(r"C:\Users\loren\PycharmProjects\SimBCR-v2\pdb_files\first_try.pdb")
     conv = PdbToObjConverter(parser)
     conv.convert_atom_pos_from_coords("obj_files/atom_coords.obj", radius=.5, subdiv=1,
-                                      fake_normals=False, fake_texture=True, shade_smooth=True)
+                                      fake_normals=False, fake_texture=False, shade_smooth=False)
     conv.convert_bond_pos_to_cylinder("obj_files/bond_coords.obj", radius=0.25, num_segments=6,
                                       fake_normals=False, fake_texture=True)
 

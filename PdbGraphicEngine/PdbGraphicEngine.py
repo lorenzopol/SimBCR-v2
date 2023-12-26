@@ -43,7 +43,7 @@ class GraphicsEngine:
                 sys.exit()
 
     def render(self):
-        self.ctx.clear(color=(0.08, 0.16, 0.18, 1))
+        self.ctx.clear(color=(0.229, 0.229, 0.229, 1))
         self.scene.render()
         pg.display.flip()
 

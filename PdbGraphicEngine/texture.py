@@ -7,7 +7,7 @@ class Texture:
     def __init__(self, ctx):
         self.ctx = ctx
         self.textures = {
-            "": self.get_texture(path=f"{os.path.dirname(__file__)}/textures/default.png")
+            "": self.get_texture(path=f"{os.path.dirname(__file__)}/textures/rgb.png")
         }
 
     def get_texture(self, path):

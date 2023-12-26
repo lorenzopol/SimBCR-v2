@@ -4,7 +4,7 @@ import pygame as pg
 FOV = 50  # in deg
 NEAR = 0.01
 FAR = 1000
-SPEED = 0.005
+SPEED = 0.015
 SENSITIVITY = 0.05
 
 
