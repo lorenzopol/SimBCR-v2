@@ -99,4 +99,4 @@ def main(rebuild=False, skip_to_render=True):
 
 
 if __name__ == "__main__":
-    main(rebuild=False, skip_to_render=True)
+    main(rebuild=True, skip_to_render=False)

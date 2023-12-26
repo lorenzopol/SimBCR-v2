@@ -401,7 +401,7 @@ class PdbToObjConverter:
         # there is only 1 atom to draw
         if len(atom_pos_container) == 1:
             v_container, f_container, n_container, t_container = GeometryBuilder.calculate_sphere_on_coord(
-                atom_pos_container, radius, subdiv, 0, [], [], fake_normals, fake_texture)
+                atom_pos_container, radius, subdiv, 0, fake_normals, fake_texture)
 
         else:
             v_container = []
@@ -411,9 +411,7 @@ class PdbToObjConverter:
             for index, atom_pos in enumerate(atom_pos_container):
                 nth_v_container, nth_f_container, nth_n_container, nth_t_container = \
                     GeometryBuilder.calculate_sphere_on_coord(
-                        atom_pos, radius, subdiv, index,
-                        n_container, t_container,
-                        fake_normals, fake_texture)
+                        atom_pos, radius, subdiv, index, fake_normals, fake_texture)
 
                 v_container.extend(nth_v_container)
                 f_container.extend(nth_f_container)
@@ -463,27 +461,27 @@ class PdbToObjConverter:
 
 
 if __name__ == "__main__":
-    # parser = PdbParser3D(r"C:\Users\loren\PycharmProjects\SimBCR-v2\pdb_files\tiny.pdb")
-    # conv = PdbToObjConverter(parser)
-    # conv.convert_atom_pos_from_coords("obj_files/atom_coords.obj", radius=.5, subdiv=1,
-    #                                   fake_normals=False, fake_texture=True)
-    # conv.convert_bond_pos_to_cylinder("obj_files/bond_coords.obj", radius=0.25, num_segments=6,
-    #                                   fake_normals=False, fake_texture=True)
+    parser = PdbParser3D(r"C:\Users\loren\PycharmProjects\SimBCR-v2\pdb_files\first_try.pdb")
+    conv = PdbToObjConverter(parser)
+    conv.convert_atom_pos_from_coords("obj_files/atom_coords.obj", radius=.5, subdiv=1,
+                                      fake_normals=False, fake_texture=True)
+    conv.convert_bond_pos_to_cylinder("obj_files/bond_coords.obj", radius=0.25, num_segments=6,
+                                      fake_normals=False, fake_texture=True)
 
-    from random import randrange
+    # from random import randrange
 
-    v_cont = []
-    f_cont = []
-    n_cont = []
-    t_cont = []
-    for idx in range(10):
-        nth_v_cont, nth_f_cont, nth_n_cont, nth_t_cont = GeometryBuilder.calculate_sphere_on_coord(
-            [randrange(-10, 10), randrange(-10, 10), randrange(-10, 10)],
-            radius=1, subdiv=1, iteration=idx,
-            fake_normals=False, fake_texture=True)
-        v_cont.extend(nth_v_cont)
-        f_cont.extend(nth_f_cont)
-        n_cont.extend(nth_n_cont)
-        t_cont.extend(nth_t_cont)
-    with open("obj_files/icosphere.obj", "w") as file:
-        ObjWriters.dump_TRIS_containers(file, v_cont, f_cont, n_cont, t_cont)
+    # v_cont = []
+    # f_cont = []
+    # n_cont = []
+    # t_cont = []
+    # for idx in range(10):
+    #     nth_v_cont, nth_f_cont, nth_n_cont, nth_t_cont = GeometryBuilder.calculate_sphere_on_coord(
+    #         [randrange(-10, 10), randrange(-10, 10), randrange(-10, 10)],
+    #         radius=1, subdiv=1, iteration=idx,
+    #         fake_normals=False, fake_texture=True)
+    #     v_cont.extend(nth_v_cont)
+    #     f_cont.extend(nth_f_cont)
+    #     n_cont.extend(nth_n_cont)
+    #     t_cont.extend(nth_t_cont)
+    # with open("obj_files/icosphere.obj", "w") as file:
+    #     ObjWriters.dump_TRIS_containers(file, v_cont, f_cont, n_cont, t_cont)

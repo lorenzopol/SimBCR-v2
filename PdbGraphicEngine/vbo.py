@@ -91,7 +91,6 @@ class ObjVBO(BaseVBO):
 
     def get_vertex_data(self):
         objs = pywavefront.Wavefront(self.path_to_obj, cache=False, parse=True)
-        print(objs.materials)
         obj = objs.materials.popitem()[1]
         vertex_data = obj.vertices
         vertex_data = np.array(vertex_data, dtype="f4")

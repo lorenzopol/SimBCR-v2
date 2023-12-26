@@ -5,7 +5,6 @@ class ShaderProgram:
         self.programs = {"default": self.get_program("default")}
 
     def get_program(self, shader_program_name):
-        print(os.path.dirname(__file__))
         with open(f"{os.path.dirname(__file__)}/shaders/{shader_program_name}.vert") as file:
             vertex_shader = file.read()
 
