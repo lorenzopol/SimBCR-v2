@@ -1,5 +1,5 @@
 # SimBCR
-Python script for simulating recombinant receptor 3D structure in a fully autonomous fashion.
+SimBCR is a python project for simulating recombinant receptor 3D structure in a fully autonomous fashion.
 
 > This is still an experimental build, once this project will be over a full documentation and contribution pipeline will be released.
 
@@ -7,12 +7,13 @@ Python script for simulating recombinant receptor 3D structure in a fully autono
 1. Simulate variable regions (check literature \[1]) and join them with constant regions
 2. Dynamically find CDR3 region
 3. Autonomous protein folding (check literature \[2])
-4. Autonomous local pdb rendering via OpenGL-based (check literature \[3]) novel PDB rendering
-5. Autonomous web based pdb rendering via py3dmol and jupyter-notebook
-6. Two different ways (rainbow and CDR) to color your antibody once folding is done 
+4. Autonomous local pdb rendering via OpenGL-based (check literature \[3]) rendering
+5. Free camera movement around your 3d rendered pdb file
+6. Autonomous web based pdb rendering via py3dmol and jupyter-notebook
+7. Two different ways (rainbow and CDR) to color your antibody once folding is done 
 
 ## Installation
-> WARNING: these are the minimum steps needed to run the CURRENT default behaviour of SimBCR. No other function is being supported 
+> WARNING: these are the minimum steps needed to run the CURRENT default behaviour of SimBCR. No other functionality is being supported 
 
 1. In order to get all the necessary python packages run
 `pip install -r requirements.txt`
@@ -30,9 +31,8 @@ If everything runs smoothly, a window should open with your folded heavy chain (
 Please keep in mind that the default settings simulate a human IgG heavy chain.
 ### Custom inputs
 Right now simBCR allows you to customize your input in two different ways: simple mode and developer mode.
-Full detail on parameters and further documentation can be found [here](https://immunesim.readthedocs.io/en/latest/parameters.html).
 #### Custom inputs: simple mode
-In order to run a custom simulation in the easiest way possible, provide the following input when launching main.py
+In order to run a custom simulation in the easiest way possible, provide the following inputs when launching main.py
 
 `python main.py  --number_of_seqs 100 --species hs --receptor tr --chain b --name_repertoire my_custom_sim` 
 
@@ -43,8 +43,8 @@ The default way of running SimBCR translates to:
 #### Custom inputs: developer mode
 If you really want to dig deeper into customization you can edit the `InputParser` instance in `main.py` by adding any of the available keys present in `InputParser.default_main_R_args` (check `InputParser.py`) as a kwarg. For example, replacing the current creation of `InputParser` with `
 InputParser(args, smh_mode = "naive", smh_prob = 100/350)` will cause the simulation of a variable region where each 350 nucleotides 100 will get mutated in a random way.
-Keep in mind that the key (smh_mode here) need to be present in `InputParser.default_main_R_args` and the value ("naive" here) should be treated as a raw R input.
-Using custom inputs in this way is NOT recommended and, as stated above, please refer to the [original documentation](https://immunesim.readthedocs.io/en/latest/parameters.html) if you need more information. 
+Keep in mind that the key (smh_mode here, no quotes!) need to be present in `InputParser.default_main_R_args` and the value ("naive" here) should be treated as a raw R input.
+Using custom inputs in this way is NOT recommended and please refer to the [original documentation](https://immunesim.readthedocs.io/en/latest/parameters.html) if you need more information. 
 
 
 ## Develop timeline from 24/12/23 on:
