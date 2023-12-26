@@ -79,9 +79,9 @@ class Obj(BaseModel):
         self.program["m_view"].write(self.app.camera.m_view)
         self.program["m_model"].write(self.m_model)
 
-        up = (0, 1, 0) if round(self.rot[0], 2) == -3.14 else (0, 0, -1)
-        m_model = glm.rotate(self.m_model, self.app.time/3, glm.vec3(up))
-        self.program["m_model"].write(m_model)
+        # up = (0, 1, 0) if round(self.rot[0], 2) == -3.14 else (0, 0, -1)
+        # self.m_model = glm.rotate(self.m_model, self.app.time/3, glm.vec3(up))
+        self.program["m_model"].write(self.m_model)
 
     def on_init(self):
         # texture
