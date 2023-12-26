@@ -79,18 +79,20 @@ def main(rebuild=False, skip_to_render=True):
     aa_light_chain = Bio.Seq.translate(Bio.Seq.transcribe(dna_light_chain))
 
     # protein folding
+    print("initializing protein folding")
     path_to_pdb = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pdb_files/first_try.pdb")
     folder = pf.ESMatlas(aa_light_chain)
 
+    print("initializing graphic engine")
     if args.renderer == "local":
         if not skip_to_render:
             folder.fold(path_to_pdb)
             _3d_parser = PdbParser3D(path_to_pdb)
             conv = PdbToObjConverter(_3d_parser)
-            conv.convert_atom_pos_from_coords("obj_files/atom_coords.obj", radius=.5, n_slices=11, n_stack=5,
-                                              fake_normals=True, fake_texture=True)
-            conv.convert_bond_pos_to_cylinder("obj_files/bond_coords.obj", radius=0.25, num_segments=4,
-                                              fake_normals=True, fake_texture=True)
+            conv.convert_atom_pos_from_coords("obj_files/atom_coords.obj", radius=.5, subdiv=1,
+                                              fake_normals=False, fake_texture=True)
+            conv.convert_bond_pos_to_cylinder("obj_files/bond_coords.obj", radius=0.25, num_segments=6,
+                                              fake_normals=False, fake_texture=True)
         GraphicsEngine().run()
     elif args.renderer == "web":
         folder.fold_and_show_pdb(path_to_pdb, "CDR", cdr3_range)

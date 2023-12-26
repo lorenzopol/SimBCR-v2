@@ -115,26 +115,23 @@ class GeometryBuilder:
         faces = [
             # 5 faces around point 0
             [0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11],
-
             # Adjacent faces
             [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
-
             # 5 faces around 3
             [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9],
-
             # Adjacent faces
             [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1],
         ]
         return verts, faces
 
     @staticmethod
-    def middle_point(verts, point_1, point_2, radius, middle_point_cache):
-        # We check if we have already cut this edge first # to avoid duplicated verts
+    def middle_point(point_1, point_2, radius, verts, middle_point_cache):
         smaller_index = min(point_1, point_2)
         greater_index = max(point_1, point_2)
         key = f"{smaller_index}-{greater_index}"
+
         if key in middle_point_cache:
-            return middle_point_cache[key], middle_point_cache
+            return middle_point_cache[key], verts
             # If it's not in cache, then we can cut it
         vert_1 = verts[point_1]
         vert_2 = verts[point_2]
@@ -142,13 +139,12 @@ class GeometryBuilder:
         verts.append(GeometryBuilder.vertex(*middle, radius))
         index = len(verts) - 1
         middle_point_cache[key] = index
-        return index, middle_point_cache
+        return index, verts
 
     @staticmethod
     def calculate_sphere_on_coord(position: list[int | float, ...] | tuple[int | float, ...],
                                   radius: int | float,
                                   subdiv: int, iteration: int,
-                                  v_container: list | tuple, f_container: list | tuple,
                                   n_container: list | tuple, t_container: list | tuple,
                                   fake_normals: bool, fake_texture: bool):
         # from https://sinestesia.co/blog/tutorials/python-icospheres/
@@ -163,51 +159,57 @@ class GeometryBuilder:
                                        iteration=i,
                                        v_container=[], f_container=[])
         returns v_container and f_container with the correctly populated data for vertex and faces value for obj dump"""
-        start_idx = (40 * subdiv + 2) * iteration + 1
-        position = [position[0], position[2], -position[1]]
+        start_idx = (10 * (4 ** subdiv) + 2) * iteration
+        end_idx = (10 * (4 ** subdiv) + 2) * (iteration+1)
         middle_point_cache = {}
-        neo_f_container = []
+        position = [position[0], position[2], -position[1]]
 
-        pre_v_container, pre_f_container = GeometryBuilder.make_std_icosphere(radius)
+        v_container, f_container = GeometryBuilder.make_std_icosphere(radius)
         for i in range(subdiv):
+
             # populate f_container. !!! pre_v_container gets modified in middle_point
-            for tri in pre_f_container:
-                v1, middle_point_cache = GeometryBuilder.middle_point(pre_v_container, tri[0], tri[1], radius,
-                                                                      middle_point_cache)
-                v2, middle_point_cache = GeometryBuilder.middle_point(pre_v_container, tri[1], tri[2], radius,
-                                                                      middle_point_cache)
-                v3, middle_point_cache = GeometryBuilder.middle_point(pre_v_container, tri[2], tri[0], radius,
-                                                                      middle_point_cache)
-                neo_f_container.append([start_idx + tri[0], start_idx + v1, start_idx + v3])
-                neo_f_container.append([start_idx + tri[1], start_idx + v2, start_idx + v1])
-                neo_f_container.append([start_idx + tri[2], start_idx + v3, start_idx + v2])
-                neo_f_container.append([start_idx + v1, start_idx + v2, start_idx + v3])
+            temp_f_container = []
+            for tri in f_container:
+                v1, v_container = GeometryBuilder.middle_point(tri[0], tri[1], radius,
+                                                               v_container, middle_point_cache)
+                v2, v_container = GeometryBuilder.middle_point(tri[1], tri[2], radius,
+                                                               v_container, middle_point_cache)
+                v3, v_container = GeometryBuilder.middle_point(tri[2], tri[0], radius,
+                                                               v_container, middle_point_cache)
 
-        # populate v_container
-        for v in pre_v_container:
-            v_container.append([(v[0] + position[0]),
-                                (v[1] + position[1]),
-                                (v[2] + position[2])])
-
+                temp_f_container.append([tri[0], v1, v3])
+                temp_f_container.append([tri[1], v2, v1])
+                temp_f_container.append([tri[2], v3, v2])
+                temp_f_container.append([v1, v2, v3])
+            f_container = temp_f_container
         # populate n_container
         if fake_normals:
-            n_container.extend([[0.00, 0.00, 1.00] for _ in neo_f_container])
+            n_container.extend([[0.00, 0.00, 1.00] for _ in f_container])
         else:
-            for face in neo_f_container:
-                print(neo_f_container)
-                v0, v1, v2 = v_container[face[0] - 1], v_container[face[1] - 1], v_container[face[2] - 1]
+            for face in f_container:
+                face_idx_0 = face[0] - 1
+                face_idx_1 = face[1] - 1
+                face_idx_2 = face[2] - 1
+                # print(f"{face_idx_0 = }")
+                # print(f"{face_idx_1 = }")
+                # print(f"{face_idx_2 = }")
+                v0, v1, v2 = v_container[face_idx_0], v_container[face_idx_1], v_container[face_idx_2]
                 face_normal = GeometryBuilder.calculate_face_normal(v0, v1, v2)
                 n_container.append(face_normal.tolist())
 
         # populate t_container
         if fake_texture:
-            t_container = [[0.00, 0.00, 1.00] for _ in neo_f_container]
+            t_container = [[0.00, 0.00, 1.00] for _ in f_container]
+        for idx_face in range(len(f_container)):
+            f_container[idx_face][0] = f_container[idx_face][0] + 1 + start_idx
+            f_container[idx_face][1] = f_container[idx_face][1] + 1 + start_idx
+            f_container[idx_face][2] = f_container[idx_face][2] + 1 + start_idx
 
-        # add neo_faces to f_container
-        f_container.extend(neo_f_container)
-
+        for idx_vert in range(len(v_container)):
+            v_container[idx_vert][0] = v_container[idx_vert][0] + position[0]
+            v_container[idx_vert][1] = v_container[idx_vert][1] + position[1]
+            v_container[idx_vert][2] = v_container[idx_vert][2] + position[2]
         return v_container, f_container, n_container, t_container
-
 
 class ObjWriters:
     @staticmethod
@@ -401,7 +403,7 @@ class PdbToObjConverter:
         # there is only 1 atom to draw
         if len(atom_pos_container) == 1:
             v_container, f_container, n_container, t_container = GeometryBuilder.calculate_sphere_on_coord(
-                atom_pos_container, radius, subdiv, 0, [], [], [], [], fake_normals, fake_texture)
+                atom_pos_container, radius, subdiv, 0, [], [], fake_normals, fake_texture)
 
         else:
             v_container = []
@@ -409,11 +411,16 @@ class PdbToObjConverter:
             n_container = []
             t_container = []
             for index, atom_pos in enumerate(atom_pos_container):
-                v_container, f_container, n_container, t_container = GeometryBuilder.calculate_sphere_on_coord(
-                    atom_pos, radius, subdiv, index,
-                    v_container, f_container, n_container, t_container,
-                    fake_normals, fake_texture)
+                nth_v_container, nth_f_container, nth_n_container, nth_t_container = \
+                    GeometryBuilder.calculate_sphere_on_coord(
+                        atom_pos, radius, subdiv, index,
+                        n_container, t_container,
+                        fake_normals, fake_texture)
 
+                v_container.extend(nth_v_container)
+                f_container.extend(nth_f_container)
+                n_container.extend(nth_n_container)
+                t_container.extend(nth_t_container)
         return v_container, f_container, n_container, t_container
 
     def convert_atom_pos_from_coords(self, atom_coords_obj_output_filepath, radius, subdiv,
@@ -458,23 +465,27 @@ class PdbToObjConverter:
 
 
 if __name__ == "__main__":
+    # parser = PdbParser3D(r"C:\Users\loren\PycharmProjects\SimBCR-v2\pdb_files\tiny.pdb")
+    # conv = PdbToObjConverter(parser)
+    # conv.convert_atom_pos_from_coords("obj_files/atom_coords.obj", radius=.5, subdiv=1,
+    #                                   fake_normals=False, fake_texture=True)
+    # conv.convert_bond_pos_to_cylinder("obj_files/bond_coords.obj", radius=0.25, num_segments=6,
+    #                                   fake_normals=False, fake_texture=True)
+
     from random import randrange
-    parser = PdbParser3D(r"C:\Users\loren\PycharmProjects\SimBCR-v2\pdb_files\tiny.pdb")
-    conv = PdbToObjConverter(parser)
-    conv.convert_atom_pos_from_coords("obj_files/atom_coords.obj", radius=.5, subdiv=1,
-                                      fake_normals=False, fake_texture=True)
-    conv.convert_bond_pos_to_cylinder("obj_files/bond_coords.obj", radius=0.25, num_segments=6,
-                                      fake_normals=False, fake_texture=True)
 
     v_cont = []
     f_cont = []
     n_cont = []
     t_cont = []
-    # todo: icosphere generation does not work with iteration > 1
-    for idx in range(20):
-        v_cont, f_cont, n_cont, t_cont = GeometryBuilder.calculate_sphere_on_coord(
-            [randrange(-10, 10), randrange(-10, 10), randrange(-10, 10)], 1, 1, idx,
-            v_cont, f_cont, n_cont, t_cont,
+    for idx in range(2):
+        nth_v_cont, nth_f_cont, nth_n_cont, nth_t_cont = GeometryBuilder.calculate_sphere_on_coord(
+            [randrange(-10, 10), randrange(-10, 10), randrange(-10, 10)],
+            radius=1, subdiv=1, iteration=idx, n_container=n_cont, t_container=t_cont,
             fake_normals=False, fake_texture=True)
+        v_cont.extend(nth_v_cont)
+        f_cont.extend(nth_f_cont)
+        n_cont.extend(nth_n_cont)
+        t_cont.extend(nth_t_cont)
     with open("obj_files/icosphere.obj", "w") as file:
         ObjWriters.dump_TRIS_containers(file, v_cont, f_cont, n_cont, t_cont)
