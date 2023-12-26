@@ -145,7 +145,6 @@ class GeometryBuilder:
     def calculate_sphere_on_coord(position: list[int | float, ...] | tuple[int | float, ...],
                                   radius: int | float,
                                   subdiv: int, iteration: int,
-                                  n_container: list | tuple, t_container: list | tuple,
                                   fake_normals: bool, fake_texture: bool):
         # from https://sinestesia.co/blog/tutorials/python-icospheres/
         """calculate vertex and faces based on atom_pos.
@@ -160,11 +159,12 @@ class GeometryBuilder:
                                        v_container=[], f_container=[])
         returns v_container and f_container with the correctly populated data for vertex and faces value for obj dump"""
         start_idx = (10 * (4 ** subdiv) + 2) * iteration
-        end_idx = (10 * (4 ** subdiv) + 2) * (iteration+1)
         middle_point_cache = {}
         position = [position[0], position[2], -position[1]]
 
         v_container, f_container = GeometryBuilder.make_std_icosphere(radius)
+        n_container = []
+        t_container = []
         for i in range(subdiv):
 
             # populate f_container. !!! pre_v_container gets modified in middle_point
@@ -186,13 +186,10 @@ class GeometryBuilder:
         if fake_normals:
             n_container.extend([[0.00, 0.00, 1.00] for _ in f_container])
         else:
-            for face in f_container:
-                face_idx_0 = face[0] - 1
-                face_idx_1 = face[1] - 1
-                face_idx_2 = face[2] - 1
-                # print(f"{face_idx_0 = }")
-                # print(f"{face_idx_1 = }")
-                # print(f"{face_idx_2 = }")
+            for face_idx, face in enumerate(f_container):
+                face_idx_0 = face[0]
+                face_idx_1 = face[1]
+                face_idx_2 = face[2]
                 v0, v1, v2 = v_container[face_idx_0], v_container[face_idx_1], v_container[face_idx_2]
                 face_normal = GeometryBuilder.calculate_face_normal(v0, v1, v2)
                 n_container.append(face_normal.tolist())
@@ -210,6 +207,7 @@ class GeometryBuilder:
             v_container[idx_vert][1] = v_container[idx_vert][1] + position[1]
             v_container[idx_vert][2] = v_container[idx_vert][2] + position[2]
         return v_container, f_container, n_container, t_container
+
 
 class ObjWriters:
     @staticmethod
@@ -478,10 +476,10 @@ if __name__ == "__main__":
     f_cont = []
     n_cont = []
     t_cont = []
-    for idx in range(2):
+    for idx in range(10):
         nth_v_cont, nth_f_cont, nth_n_cont, nth_t_cont = GeometryBuilder.calculate_sphere_on_coord(
             [randrange(-10, 10), randrange(-10, 10), randrange(-10, 10)],
-            radius=1, subdiv=1, iteration=idx, n_container=n_cont, t_container=t_cont,
+            radius=1, subdiv=1, iteration=idx,
             fake_normals=False, fake_texture=True)
         v_cont.extend(nth_v_cont)
         f_cont.extend(nth_f_cont)
