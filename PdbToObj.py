@@ -145,7 +145,7 @@ class GeometryBuilder:
     def calculate_sphere_on_coord(position: list[int | float, ...] | tuple[int | float, ...],
                                   radius: int | float,
                                   subdiv: int, iteration: int,
-                                  fake_normals: bool, fake_texture: bool):
+                                  fake_normals: bool, fake_texture: bool, shade_smooth: bool):
         # from https://sinestesia.co/blog/tutorials/python-icospheres/
         """calculate vertex and faces based on atom_pos.
         > single use
@@ -158,13 +158,16 @@ class GeometryBuilder:
                                        iteration=i,
                                        v_container=[], f_container=[])
         returns v_container and f_container with the correctly populated data for vertex and faces value for obj dump"""
-        start_idx = (10 * (4 ** subdiv) + 2) * iteration
+        assert not fake_normals and shade_smooth, "Can't generate fake normals with smooth shading. Set shade_smooth to False"
+        nof_vertices = (10 * (4 ** subdiv) + 2)
+        start_idx = nof_vertices * iteration
         middle_point_cache = {}
         position = [position[0], position[2], -position[1]]
 
         v_container, f_container = GeometryBuilder.make_std_icosphere(radius)
         n_container = []
         t_container = []
+        vertex_to_normal_contrib = {i: [] for i in range(nof_vertices)}
         for i in range(subdiv):
 
             # populate f_container. !!! pre_v_container gets modified in middle_point
@@ -187,13 +190,23 @@ class GeometryBuilder:
             n_container.extend([[0.00, 0.00, 1.00] for _ in f_container])
         else:
             for face_idx, face in enumerate(f_container):
-                face_idx_0 = face[0]
-                face_idx_1 = face[1]
-                face_idx_2 = face[2]
-                v0, v1, v2 = v_container[face_idx_0], v_container[face_idx_1], v_container[face_idx_2]
+                vertex_idx_0 = face[0]
+                vertex_idx_1 = face[1]
+                vertex_idx_2 = face[2]
+                v0, v1, v2 = v_container[vertex_idx_0], v_container[vertex_idx_1], v_container[vertex_idx_2]
                 face_normal = GeometryBuilder.calculate_face_normal(v0, v1, v2)
-                n_container.append(face_normal.tolist())
-
+                if shade_smooth:
+                    vertex_to_normal_contrib[vertex_idx_0].append(face_normal)
+                    vertex_to_normal_contrib[vertex_idx_1].append(face_normal)
+                    vertex_to_normal_contrib[vertex_idx_2].append(face_normal)
+                else:
+                    n_container.append(face_normal.tolist())
+        for vertex_idx, face_normals_contributions in vertex_to_normal_contrib.items():
+            acc = np.zeros((1, 3))
+            for face_normal in face_normals_contributions:
+                acc += face_normal
+            acc = (acc / len(face_normals_contributions))[0]
+            n_container.append(acc)
         # populate t_container
         if fake_texture:
             t_container = [[0.00, 0.00, 1.00] for _ in f_container]
@@ -213,7 +226,7 @@ class ObjWriters:
     @staticmethod
     def dump_TRIS_containers(obj_file_handle,
                              v_container: list | tuple, f_container: list | tuple,
-                             n_container: list | tuple, t_container: list | tuple):
+                             n_container: list | tuple, t_container: list | tuple, shade_smoooth):
         """general TRIS dumper for obj file.
             :param obj_file_handle: file handle from with statement
             :param v_container: iterable that stores the XYZ position of the vertices.
@@ -234,11 +247,16 @@ class ObjWriters:
 
         for normal in n_container:
             obj_file_handle.write(f"vn {normal[0]} {normal[1]} {normal[2]}\n")
-
-        for face_idx, face in enumerate(f_container):
-            obj_file_handle.write(f"f {face[0]}/{fake_texture_idx}/{face_idx + 1}"
-                                  f" {face[1]}/{fake_texture_idx}/{face_idx + 1}"
-                                  f" {face[2]}/{fake_texture_idx}/{face_idx + 1}\n")
+        if shade_smoooth:
+            for face in f_container:
+                obj_file_handle.write(f"f {face[0]}/{fake_texture_idx}/{face[0]}"
+                                      f" {face[1]}/{fake_texture_idx}/{face[1]}"
+                                      f" {face[2]}/{fake_texture_idx}/{face[2]}\n")
+        else:
+            for face_idx, face in enumerate(f_container):
+                obj_file_handle.write(f"f {face[0]}/{fake_texture_idx}/{face_idx + 1}"
+                                      f" {face[1]}/{fake_texture_idx}/{face_idx + 1}"
+                                      f" {face[2]}/{fake_texture_idx}/{face_idx + 1}\n")
 
     @staticmethod
     def dump_QUADS_containers(obj_file_handle, v_container: list | tuple, f_container: list | tuple,
@@ -385,7 +403,7 @@ class PdbToObjConverter:
 
     @staticmethod
     def instance_spheres_on_atom_coords_list(atom_pos_container: tuple | list, radius, subdiv,
-                                             fake_normals, fake_texture):
+                                             fake_normals, fake_texture, shade_smooth):
         """calculate vertex and faces based on atom_pos.
                 > single use
                 calculate_sphere_on_atom_coord(atom_coords=[[x0, y0, z0]], radius=0.2,
@@ -401,7 +419,7 @@ class PdbToObjConverter:
         # there is only 1 atom to draw
         if len(atom_pos_container) == 1:
             v_container, f_container, n_container, t_container = GeometryBuilder.calculate_sphere_on_coord(
-                atom_pos_container, radius, subdiv, 0, fake_normals, fake_texture)
+                atom_pos_container, radius, subdiv, 0, fake_normals, fake_texture, shade_smooth)
 
         else:
             v_container = []
@@ -411,7 +429,7 @@ class PdbToObjConverter:
             for index, atom_pos in enumerate(atom_pos_container):
                 nth_v_container, nth_f_container, nth_n_container, nth_t_container = \
                     GeometryBuilder.calculate_sphere_on_coord(
-                        atom_pos, radius, subdiv, index, fake_normals, fake_texture)
+                        atom_pos, radius, subdiv, index, fake_normals, fake_texture, shade_smooth)
 
                 v_container.extend(nth_v_container)
                 f_container.extend(nth_f_container)
@@ -420,12 +438,12 @@ class PdbToObjConverter:
         return v_container, f_container, n_container, t_container
 
     def convert_atom_pos_from_coords(self, atom_coords_obj_output_filepath, radius, subdiv,
-                                     fake_normals, fake_texture):
+                                     fake_normals, fake_texture, shade_smooth):
         v_container, f_container, n_container, t_container = self.instance_spheres_on_atom_coords_list(
-            self.parser3d.all_atom_coords, radius, subdiv, fake_normals, fake_texture)
+            self.parser3d.all_atom_coords, radius, subdiv, fake_normals, fake_texture, shade_smooth)
         with open(atom_coords_obj_output_filepath, "w") as obj_file_handle:
             ObjWriters.dump_TRIS_containers(obj_file_handle, v_container, f_container,
-                                            n_container, t_container)
+                                            n_container, t_container, shade_smooth)
 
     # =========================================== BONDS ========================================
     def instance_cylinder_on_bond_coords_list(self, radius, num_segments,
@@ -464,24 +482,26 @@ if __name__ == "__main__":
     parser = PdbParser3D(r"C:\Users\loren\PycharmProjects\SimBCR-v2\pdb_files\first_try.pdb")
     conv = PdbToObjConverter(parser)
     conv.convert_atom_pos_from_coords("obj_files/atom_coords.obj", radius=.5, subdiv=1,
-                                      fake_normals=False, fake_texture=True)
+                                      fake_normals=False, fake_texture=True, shade_smooth=True)
     conv.convert_bond_pos_to_cylinder("obj_files/bond_coords.obj", radius=0.25, num_segments=6,
                                       fake_normals=False, fake_texture=True)
 
     # from random import randrange
-
     # v_cont = []
     # f_cont = []
     # n_cont = []
     # t_cont = []
+    # g_vertex_to_normal_contrib = None
+    # spawn_ran = 20
     # for idx in range(10):
-    #     nth_v_cont, nth_f_cont, nth_n_cont, nth_t_cont = GeometryBuilder.calculate_sphere_on_coord(
-    #         [randrange(-10, 10), randrange(-10, 10), randrange(-10, 10)],
+    #     nth_v_cont, nth_f_cont, nth_n_cont, nth_t_cont, g_vertex_to_normal_contrib = GeometryBuilder.calculate_sphere_on_coord(
+    #         [randrange(-spawn_ran, spawn_ran), randrange(-spawn_ran, spawn_ran), randrange(-spawn_ran, spawn_ran)],
     #         radius=1, subdiv=1, iteration=idx,
-    #         fake_normals=False, fake_texture=True)
+    #         fake_normals=False, fake_texture=True, shade_smooth=True,
+    #         vertex_to_normal_contrib=g_vertex_to_normal_contrib)
     #     v_cont.extend(nth_v_cont)
     #     f_cont.extend(nth_f_cont)
     #     n_cont.extend(nth_n_cont)
     #     t_cont.extend(nth_t_cont)
     # with open("obj_files/icosphere.obj", "w") as file:
-    #     ObjWriters.dump_TRIS_containers(file, v_cont, f_cont, n_cont, t_cont)
+    #     ObjWriters.dump_TRIS_containers(file, v_cont, f_cont, n_cont, t_cont, True)

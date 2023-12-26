@@ -90,7 +90,7 @@ def main(rebuild=False, skip_to_render=True):
             _3d_parser = PdbParser3D(path_to_pdb)
             conv = PdbToObjConverter(_3d_parser)
             conv.convert_atom_pos_from_coords("obj_files/atom_coords.obj", radius=.5, subdiv=1,
-                                              fake_normals=False, fake_texture=True)
+                                              fake_normals=False, fake_texture=True, shade_smooth=True)
             conv.convert_bond_pos_to_cylinder("obj_files/bond_coords.obj", radius=0.25, num_segments=6,
                                               fake_normals=False, fake_texture=True)
         GraphicsEngine().run()
@@ -99,4 +99,4 @@ def main(rebuild=False, skip_to_render=True):
 
 
 if __name__ == "__main__":
-    main(rebuild=True, skip_to_render=False)
+    main(rebuild=False, skip_to_render=True)
