@@ -1,13 +1,13 @@
 import numpy as np
 import pywavefront
+import os
 
 
 class VBO:
     def __init__(self, ctx):
         self.vbos = {
-            "cube": CubeVBO(ctx),
-            "atoms": ObjVBO(ctx, r"C:\Users\loren\PycharmProjects\SimBCR-v2\obj_files\atom_coords.obj"),
-            "bonds": ObjVBO(ctx, r"C:\Users\loren\PycharmProjects\SimBCR-v2\obj_files\bond_coords.obj"),
+            "atoms": ObjVBO(ctx, os.path.join(os.getcwd(), r"obj_files\atom_coords.obj")),
+            "bonds": ObjVBO(ctx, os.path.join(os.getcwd(), r"obj_files\bond_coords.obj")),
         }
 
     def destroy(self):
@@ -37,7 +37,7 @@ class CubeVBO(BaseVBO):
     def __init__(self, ctx):
         super().__init__(ctx)
         self.format = "2f 3f 3f"
-        self.attrib = ["in_texcoord_0", "in_normal", "in_position"]
+        self.attrib = ["in_texcoord_0", "in_normal", "in_posiFtion"]
 
     @staticmethod
     def get_data(vertices, indices):

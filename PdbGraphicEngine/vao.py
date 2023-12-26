@@ -8,9 +8,6 @@ class VAO:
         self.vbo = VBO(ctx)
         self.program = ShaderProgram(ctx)
         self.vaos = {
-            "cube": self.get_vao(
-                program=self.program.programs["default"],
-                vbo=self.vbo.vbos["cube"]),
             "atoms": self.get_vao(
                 program=self.program.programs["default"],
                 vbo=self.vbo.vbos["atoms"]),

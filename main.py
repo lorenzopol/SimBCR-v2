@@ -46,7 +46,7 @@ def main(rebuild, skip_to_render):
     # parser init
     input_parser = argparse.ArgumentParser()
     input_parser.add_argument("--number_of_seqs", help="[integer], specify the desired number of sequence. ",
-                              default=69,
+                              default=100,
                               required=False)
     input_parser.add_argument("--species", help="specify the desired specie [hs, mm]", default="hs", required=False)
 
@@ -75,6 +75,20 @@ def main(rebuild, skip_to_render):
     cdr3_range = convert_cdr3range_to_std(cdr3_start, cdr3_end)
 
     # todo: right now even if a tcr-a is simulated, DNA_IGG1_CH1 always gets picked
+    constant_region = None
+    if args.receptor == "tr":
+        if args.chain == "a":
+            constant_region = Sequences.DNA_TCR_AC
+        elif args.chain == "b":
+            constant_region = Sequences.DNA_TCR_BC
+    elif args.receptor == "ig":
+        if args.chain == "h":
+            constant_region = Sequences.DNA_IGG1_CH1
+        elif args.chain == "k":
+            constant_region = Sequences.DNA_IGG1_CK
+    if constant_region is None:
+        print(
+            f"[WARNING]: No constant region found in Sequences.py for receptor {args.receptor} and chain {args.chain}")
     dna_light_chain = "".join([dna_variable_sequence, str(Sequences.DNA_IGG1_CH1).lower()])
     aa_light_chain = Bio.Seq.translate(Bio.Seq.transcribe(dna_light_chain))
 

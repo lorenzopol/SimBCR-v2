@@ -1,5 +1,5 @@
 library(immuneSIM)
-number_of_sequences <- 69
+number_of_sequences <- 100
 hs_igh_sim <- immuneSIM(
                      number_of_seqs = number_of_sequences,
                      vdj_list = list_germline_genes_allele_01,
