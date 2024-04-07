@@ -22,6 +22,6 @@ class Scene:
         add(Obj(app, vao_name="atoms", pos=(-14.712911152061071, -2, -20), rot=(-90, 0, 0)))
         add(Obj(app, vao_name="bonds", pos=(-14.712911152061071, -2, -20), rot=(-180, 0, 0)))
 
-    def render(self):
+    def render(self, rotate):
         for obj in self.objects:
-            obj.render()
+            obj.render(rotate)

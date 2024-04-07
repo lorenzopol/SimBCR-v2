@@ -518,3 +518,32 @@ class PdbToObjConverter:
         with open(bond_coords_obj_output_filepath, "w") as obj_file_handle:
             ObjWriters.dump_QUADS_containers(obj_file_handle, v_container,
                                              f_container, n_container, t_container)
+if __name__ == "__main__":
+    # todo smooth shading for cylinders?
+    parser = PdbParser3D(r"C:\Users\loren\PycharmProjects\SimBCR-v2\pdb_files\first_try.pdb", "95-114")
+    conv = PdbToObjConverter(parser)
+    conv.convert_atom_pos_from_coords("obj_files/atom_coords.obj", radius=.5, subdiv=1,
+                                      fake_normals=False, fake_texture=False, shade_smooth=False, texture_mode="CDR")
+    conv.convert_bond_pos_to_cylinder("obj_files/bond_coords.obj", radius=0.25, num_segments=6,
+                                      fake_normals=False, fake_texture=True)
+
+    # from random import randrange
+    # v_cont = []
+    # f_cont = []
+    # n_cont = []
+    # t_cont = []
+    # g_vertex_to_normal_contrib = None
+    # spawn_ran = 20
+    #
+    # geom_builder = GeometryBuilder(parser)
+    # for idx in range(10):
+    #     nth_v_cont, nth_f_cont, nth_n_cont, nth_t_cont = geom_builder.calculate_sphere_on_coord(
+    #         [randrange(-spawn_ran, spawn_ran), randrange(-spawn_ran, spawn_ran), randrange(-spawn_ran, spawn_ran)],
+    #         radius=1, subdiv=1, iteration=idx,
+    #         fake_normals=False, fake_texture=True, shade_smooth=True)
+    #     v_cont.extend(nth_v_cont)
+    #     f_cont.extend(nth_f_cont)
+    #     n_cont.extend(nth_n_cont)
+    #     t_cont.extend(nth_t_cont)
+    # with open("obj_files/icosphere.obj", "w") as file:
+    #     ObjWriters.dump_TRIS_containers(file, v_cont, f_cont, n_cont, t_cont, True)

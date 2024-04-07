@@ -74,7 +74,6 @@ def main(rebuild, skip_to_render):
     cdr3_start, cdr3_end = calculate_cdr3_range(aa_variable_sequence, aa_junction)
     cdr3_range = convert_cdr3range_to_std(cdr3_start, cdr3_end)
 
-    # todo: right now even if a tcr-a is simulated, DNA_IGG1_CH1 always gets picked
     constant_region = None
     if args.receptor == "tr":
         if args.chain == "a":
@@ -89,7 +88,7 @@ def main(rebuild, skip_to_render):
     if constant_region is None:
         print(
             f"[WARNING]: No constant region found in Sequences.py for receptor {args.receptor} and chain {args.chain}")
-    dna_light_chain = "".join([dna_variable_sequence, str(Sequences.DNA_IGG1_CH1).lower()])
+    dna_light_chain = "".join([dna_variable_sequence, str(constant_region).lower()])
     aa_light_chain = Bio.Seq.translate(Bio.Seq.transcribe(dna_light_chain))
 
     # protein folding
@@ -102,7 +101,6 @@ def main(rebuild, skip_to_render):
         if not skip_to_render:
             folder.fold(path_to_pdb)
             _3d_parser = PdbParser3D(path_to_pdb, cdr3_range)
-            print(cdr3_range)
             conv = PdbToObjConverter(_3d_parser)
             conv.convert_atom_pos_from_coords("obj_files/atom_coords.obj", radius=.5, subdiv=1,
                                               fake_normals=False, fake_texture=False, shade_smooth=True, texture_mode="CDR")
@@ -114,4 +112,4 @@ def main(rebuild, skip_to_render):
 
 
 if __name__ == "__main__":
-    main(rebuild=True, skip_to_render=False)
+    main(rebuild=False, skip_to_render=True)

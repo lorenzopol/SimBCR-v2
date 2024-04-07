@@ -13,7 +13,7 @@ class BaseModel:
         self.program = self.vao.program
         self.camera = self.app.camera
 
-    def update(self):
+    def update(self, rotate):
         ...
 
     def get_model_matrix(self):
@@ -31,8 +31,8 @@ class BaseModel:
         m_model = glm.scale(m_model, self.scale)
         return m_model
 
-    def render(self):
-        self.update()
+    def render(self, rotate):
+        self.update(rotate)
         self.vao.render()
 
 
@@ -42,7 +42,7 @@ class Cube(BaseModel):
         self.texture = self.app.mesh.texture.textures[self.tex_id]
         self.on_init()
 
-    def update(self):
+    def update(self, rotate):
         self.texture.use()
         self.program["camPos"].write(self.app.camera.position)
         self.program["m_view"].write(self.app.camera.m_view)
@@ -72,15 +72,15 @@ class Obj(BaseModel):
         self.texture = self.app.mesh.texture.textures[self.tex_id]
         self.on_init()
 
-    def update(self):
+    def update(self, rotate):
         self.texture.use()
-
+        if rotate:
+            up = (0, 1, 0) if round(self.rot[0], 2) == -3.14 else (0, 0, -1)
+            self.m_model = glm.rotate(self.m_model, self.app.time/600, glm.vec3(up))
         self.program["camPos"].write(self.app.camera.position)
         self.program["m_view"].write(self.app.camera.m_view)
         self.program["m_model"].write(self.m_model)
 
-        # up = (0, 1, 0) if round(self.rot[0], 2) == -3.14 else (0, 0, -1)
-        # self.m_model = glm.rotate(self.m_model, self.app.time/3, glm.vec3(up))
         self.program["m_model"].write(self.m_model)
 
     def on_init(self):

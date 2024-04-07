@@ -9,7 +9,7 @@ from .scene import Scene
 
 
 class GraphicsEngine:
-    def __init__(self, win_size=(1600, 900)):
+    def __init__(self, win_size=(800, 450)):
         pg.init()
         self.WIN_SIZE = win_size
 
@@ -30,6 +30,8 @@ class GraphicsEngine:
         self.time = 0
         self.delta_time = 0
 
+        self.should_model_rotate = False
+
         self.light = Light()
         self.camera = Camera(self)
         self.mesh = Mesh(self)
@@ -41,10 +43,12 @@ class GraphicsEngine:
                 self.mesh.destroy()
                 pg.quit()
                 sys.exit()
+            if event.type == pg.KEYDOWN and event.key == pg.K_TAB:
+                self.should_model_rotate = not self.should_model_rotate
 
     def render(self):
         self.ctx.clear(color=(0.229, 0.229, 0.229, 1))
-        self.scene.render()
+        self.scene.render(self.should_model_rotate)
         pg.display.flip()
 
     def get_time(self):

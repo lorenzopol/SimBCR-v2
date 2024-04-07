@@ -139,7 +139,7 @@ Sample output with CDR coloring in web rendering
 
 
 ## Project Status
-OpticReader is _complete_ and _currently not a priority_ to me. 
+SimBCR is _complete_ but occasional development will occur. 
 SimBCR is one of the first big projects (together with OpticReader) that I tried to tackle with discipline. With this being said,
 as weird as it may sound, SimBCR was a proof of concept. Firstly, I wanted to test myself in writing better code and, hopefully, create something 
 that can really be distributed and used/modified/improved by other people. I am quite happy with the result but, as I will state below, SimBCR can still improve a lot.
@@ -167,7 +167,6 @@ Currently, there are these changes that I would like to implement (someday).
 This topic can (and honestly should) have its own project section. The amount of improvements that can be done to the GraphicEngine are limitless but, considering everything, at some point ones has to stop. 
 I will keep dreaming (until I make it) about a fully-fledged lightweight and customizable 3D-pdb renderer but until then, these are SOME of the most needed changes:
 - [ ] geometry instancing. Currently, all the displayed geometry is "real geometry". This is a waste of resources and one can think of creating one cylinder and one sphere for a whole scene
-- [ ] multi-key pressing and speed increase while holing shift
 - [ ] customizable coloring scheme based on residue or atom indexes. Something has already been done in PdbtoObj.py (GeometryBuilder.calculate_sphere_on_coord() when texture_mode == "CDR")
 - [ ] GUI for "in-game" parameter tweaking
 
