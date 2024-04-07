@@ -14,7 +14,7 @@
 
 
 ## General Information
-SimBCR is a CLI-based python project that allows you to quicly set up in silico VDJ recombination and then freely navigate the 3D world with your rendered recombinant receptor (despite the project name, it also handle T-cell receptors). 
+SimBCR is a CLI-based python project that allows you to quicly set up in silico VDJ recombination and then freely navigate the 3D world with your rendered recombinant receptor (despite the project name, it also handles T-cell receptors). 
 
 Given just a few parameters from the terminal, SimBCR will run an in silico VDJ recombination thanks to [the work](#literature-and-resource-references) done by
 Cédric R. Weber and Victor Greiff. Once the simulation is done, protein folding is achieved via [ESMatlas](#literature-and-resource-references) API call. Upon retrieving
@@ -93,7 +93,7 @@ In particular, my latest entry on the project list is inspired by [this work](ht
 ## Room for Improvement
 I truly want to see SimBCR get bigger and better. Feel free to contribute to this project, I will keep an eye on all updates and I will keep working on SimBCR in my spare time.
 Please note that SimBCR has been created to be a lightweight and easy to use and distribute project. All the changes should be done keeping this simple rules in mind. 
-Currently, there are these changes that I would like to implement (someday).
+Currently, there are these changes that I would like to implement.
 
 ### VDJ Recombination
 - [ ] ImmuneSim is a wonderful tool, but it feels like cheating to leave all the heavy lifting of receptor recombination to it. A python implementation of ImmuneSim can be taken in consideration;
@@ -107,7 +107,6 @@ Currently, there are these changes that I would like to implement (someday).
 This topic can (and honestly should) have its own project section. The amount of improvements that can be done to the GraphicEngine are limitless but, considering everything, at some point ones has to stop. 
 I will keep dreaming (until I make it) about a fully-fledged lightweight and customizable 3D-pdb renderer but until then, these are SOME of the most needed changes:
 - [ ] geometry instancing. Currently, all the displayed geometry is "real geometry". This is a waste of resources and one can think of creating one cylinder and one sphere for a whole scene
-- [ ] multi-key pressing and speed increase while holing shift
 - [ ] customizable coloring scheme based on residue or atom indexes. Something has already been done in PdbtoObj.py (GeometryBuilder.calculate_sphere_on_coord() when texture_mode == "CDR")
 - [ ] GUI for "in-game" parameter tweaking
 
