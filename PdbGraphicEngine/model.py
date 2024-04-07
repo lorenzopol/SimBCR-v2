@@ -76,7 +76,7 @@ class Obj(BaseModel):
         self.texture.use()
         if rotate:
             up = (0, 1, 0) if round(self.rot[0], 2) == -3.14 else (0, 0, -1)
-            self.m_model = glm.rotate(self.m_model, self.app.time/600, glm.vec3(up))
+            self.m_model = glm.rotate(self.m_model, self.app.time/1200, glm.vec3(up))
         self.program["camPos"].write(self.app.camera.position)
         self.program["m_view"].write(self.app.camera.m_view)
         self.program["m_model"].write(self.m_model)
