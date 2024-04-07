@@ -48,9 +48,9 @@ SimBCR under default parameter which are:
 - **species**: choose if you want human (by writing `--species hs`) or murine (`--species mm`) recombinant receptors sequences;
 - **receptor**: allows you to select which recombinant receptor will be simulated: TCR (`--receptor tr`) or BCR (`--receptor ig`); 
 - **chain**: allows you to select which chain of the given receptor will be simulated: "h" and "l" for BCR/IG, "a" and "b" for TCR;
-- **renderer**: specify which pdb renderer you want to run. --renderer local will start an instance of PdbGraphicEngine while --renderer web will launch a web page where py3dmol and jupiter notebook will take care of rendering your .pdb file
+- **renderer**: specify which pdb renderer you want to run. `--renderer local` will start an instance of PdbGraphicEngine while `--renderer web` will launch a web page where py3dmol and jupiter notebook will take care of rendering your .pdb file
 
-Overall, default runs translates to `python main.py --number_of_seqs 100 --species hs --receptor ig --chain h --name_repertoire hs_igh_sim --renderer local`.
+Overall, default runs translate to `python main.py --number_of_seqs 100 --species hs --receptor ig --chain h --name_repertoire hs_igh_sim --renderer local`.
 See the [Sample input](#sample-input) section for terminal-input examples.
 
 Since SimBCR "manually" runs ImmuneSIM, you can hop into SimBCR-v2/from_immuneSIM/main.R and manually modify each 
