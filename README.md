@@ -68,7 +68,7 @@ Sample output in local rendering
 ![default_output.png](screenshots/default_output.png)
 
 Sample output with CDR coloring in local rendering (R: CDR1 (estimate), G: CDR2 (estimate), B: CDR: 3)
-![https://github.com/lorenzopol/SimBCR-v2/assets/112185896/28da8d1a-8341-4c3a-a7a9-33bc653f9ef3]
+![](https://github.com/lorenzopol/SimBCR-v2/assets/112185896/28da8d1a-8341-4c3a-a7a9-33bc653f9ef3)
 
 
 Sample output with CDR coloring in web rendering
