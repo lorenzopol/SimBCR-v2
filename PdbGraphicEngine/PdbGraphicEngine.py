@@ -27,14 +27,37 @@ class GraphicEngine:
         disable_cursor()
         set_target_fps(60)
 
+    def show_cylinder(self, bonds_container):
+        transforms_container = []
+        up = Vector3(0, 1, 0)
+        for bond in bonds_container:
+            prev_atom_pos, next_atom_pos = Vector3(*self.pdb_parser.all_atom_coords[bond[0] - 1]), \
+                Vector3(*self.pdb_parser.all_atom_coords[bond[1] - 1])
+            bond_axis = vector3_subtract(next_atom_pos, prev_atom_pos)
+            bond_length = vector3_length(bond_axis)
+            perp = vector3_cross_product(up, bond_axis)
+            angle = vector3_angle(up, bond_axis)
+            transMat = matrix_translate(prev_atom_pos.x, prev_atom_pos.y, prev_atom_pos.z)
+            rotMat = matrix_rotate(perp, angle)
+            scaleMat = matrix_scale(1, bond_length, 1)
+
+            transforms_container.append(
+                matrix_multiply(
+                    matrix_multiply(scaleMat, rotMat),
+                    transMat)
+            )
+        return transforms_container
+
     def run(self):
         shader = load_shader("shaders/lighting_instancing.vs", "shaders/lighting.fs")
         shader.locs[ShaderLocationIndex.SHADER_LOC_MATRIX_MVP] = get_shader_location(shader, "mvp")
         shader.locs[ShaderLocationIndex.SHADER_LOC_VECTOR_VIEW] = get_shader_location(shader, "viewPos")
-        shader.locs[ShaderLocationIndex.SHADER_LOC_MATRIX_MODEL] = get_shader_location_attrib(shader, "instanceTransform")
+        shader.locs[ShaderLocationIndex.SHADER_LOC_MATRIX_MODEL] = get_shader_location_attrib(shader,
+                                                                                              "instanceTransform")
 
-        set_shader_value(shader, get_shader_location(shader, "ambient"), Vector4(2, 2, 2, 1.0), ShaderUniformDataType.SHADER_UNIFORM_VEC4)
-        Light(LightType.POINT, (5.0, 10.0, 10.0), (0.0, 0.0, 0.0), (255.0, 255.0, 255.0, 1.0), shader)
+        set_shader_value(shader, get_shader_location(shader, "ambient"), Vector4(2, 2, 2, 1.0),
+                         ShaderUniformDataType.SHADER_UNIFORM_VEC4)
+        # todo: add lights proper implementation
 
         atoms_material: Material = load_material_default()
         atoms_material.shader = shader
@@ -45,7 +68,7 @@ class GraphicEngine:
         bonds_material.maps[MaterialMapIndex.MATERIAL_MAP_ALBEDO].color = BLUE
 
         sphere_transforms = []
-        gen_sphere = gen_mesh_sphere(0.5, 12, 12)
+        gen_sphere = gen_mesh_sphere(0.3, 12, 12)
         for atom_coord in self.pdb_parser.all_atom_coords:
             sphere_transforms.append(
                 matrix_multiply(
@@ -53,17 +76,9 @@ class GraphicEngine:
                     matrix_translate(*atom_coord)
                 )
             )
-        cylinder_transforms = []
-        gen_cylinder = gen_mesh_cylinder(0.25, 1, 12)
-        for bond in self.pdb_parser.inter_aa_bonds_rel:
-            prev_atom_pos, next_atom_pos = self.pdb_parser.all_atom_coords[bond[0]-1], self.pdb_parser.all_atom_coords[bond[1]-1]
-            bond_axis = vector3_normalize(vector3_subtract(next_atom_pos, prev_atom_pos))
-            cylinder_transforms.append(
-                matrix_multiply(
-                    matrix_rotate(bond_axis, 0),
-                    matrix_translate(*prev_atom_pos)
-                )
-            )
+        inter_aa_bonds_transforms = self.show_cylinder(self.pdb_parser.inter_aa_bonds_rel)
+        peptide_bonds_transforms = self.show_cylinder(self.pdb_parser.peptide_bonds_rel)
+        gen_cylinder = gen_mesh_cylinder(0.125, 1, 12)
 
         is_camera_orbit_control = False
         show_grid = True
@@ -97,13 +112,15 @@ class GraphicEngine:
                     CameraProjection.CAMERA_PERSPECTIVE
                 )
 
-            set_shader_value(shader, shader.locs[ShaderLocationIndex.SHADER_LOC_VECTOR_VIEW], self.camera.position, ShaderUniformDataType.SHADER_UNIFORM_VEC3)
+            set_shader_value(shader, shader.locs[ShaderLocationIndex.SHADER_LOC_VECTOR_VIEW], self.camera.position,
+                             ShaderUniformDataType.SHADER_UNIFORM_VEC3)
             # Draw
             begin_drawing()
             clear_background(RAYWHITE)
             begin_mode_3d(self.camera)
             draw_mesh_instanced(gen_sphere, atoms_material, sphere_transforms, len(sphere_transforms))
-            draw_mesh_instanced(gen_cylinder, bonds_material, cylinder_transforms, len(cylinder_transforms))
+            draw_mesh_instanced(gen_cylinder, bonds_material, inter_aa_bonds_transforms, len(inter_aa_bonds_transforms))
+            draw_mesh_instanced(gen_cylinder, bonds_material, peptide_bonds_transforms, len(peptide_bonds_transforms))
 
             if show_grid:
                 draw_grid(100, 1.0)
