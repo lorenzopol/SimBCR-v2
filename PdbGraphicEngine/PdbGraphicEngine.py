@@ -116,11 +116,13 @@ class GraphicEngine:
             transform = matrix_multiply(
                     matrix_multiply(std_transform, Globals.X_GLOBAL_ROT_MATRIX),
                     Globals.Y_GLOBAL_ROT_MATRIX)
-            if atom.parent.serial_number in self.pdb_parser.cdr1_range:
+            
+            residue_idx = atom.get_parent().get_id()[1] 
+            if residue_idx in self.pdb_parser.cdr1_range:
                 cdr1_atoms_transforms.append(transform)
-            elif atom.parent.serial_number in self.pdb_parser.cdr2_range:
+            elif residue_idx in self.pdb_parser.cdr2_range:
                 cdr2_atoms_transforms.append(transform)
-            elif atom.parent.serial_number in self.pdb_parser.cdr3_range:
+            elif residue_idx in self.pdb_parser.cdr3_range:
                 cdr3_atoms_transforms.append(transform)
             else:
                 base_atoms_transforms.append(transform)
@@ -157,6 +159,7 @@ class GraphicEngine:
             begin_drawing()
             clear_background(RAYWHITE)
             begin_mode_3d(self.camera)
+
             draw_mesh_instanced(gen_sphere, base_atoms_material, base_atoms_transforms, len(base_atoms_transforms))
             draw_mesh_instanced(gen_sphere, cdr1_atoms_material, cdr1_atoms_transforms, len(cdr1_atoms_transforms))
             draw_mesh_instanced(gen_sphere, cdr2_atoms_material, cdr2_atoms_transforms, len(cdr2_atoms_transforms))
