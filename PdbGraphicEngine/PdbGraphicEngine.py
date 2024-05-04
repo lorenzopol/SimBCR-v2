@@ -1,13 +1,14 @@
 from pyray import *
 
 from BiologicalConstants import relative_atom_radius
-from rlights import Light, LightType
 from PdbToObj import PdbParser3D
 
 
 class Globals:
     ATOM_RADIUS_FACTOR = 1.5
     BOND_RADIUS_FACTOR = 1.5
+    Y_GLOBAL_ROT_MATRIX = matrix_rotate(Vector3(0.0, 1.0, 0.0), 90)
+    X_GLOBAL_ROT_MATRIX = matrix_rotate(Vector3(0.0, 0.0, 1.0), 90)
 
     @staticmethod
     def get_default_camera() -> Camera3D:
@@ -45,23 +46,25 @@ class GraphicEngine:
             transMat = matrix_translate(prev_atom_pos.x, prev_atom_pos.y, prev_atom_pos.z)
             rotMat = matrix_rotate(perp, angle)
             scaleMat = matrix_scale(Globals.BOND_RADIUS_FACTOR, bond_length, Globals.BOND_RADIUS_FACTOR)
+            std_transform = matrix_multiply(
+                        matrix_multiply(scaleMat, rotMat),
+                        transMat)
             transforms_container.append(
                 matrix_multiply(
-                    matrix_multiply(scaleMat, rotMat),
-                    transMat)
+                    matrix_multiply(std_transform, Globals.X_GLOBAL_ROT_MATRIX),
+                    Globals.Y_GLOBAL_ROT_MATRIX)
             )
         return transforms_container
 
     def run(self):
-        # check https://www.reddit.com/r/raylib/comments/v70krp/how_does_rlglh_batching_work/
-        # batch = rl_load_render_batch(1, 8192)
-
         shader = load_shader("shaders/default.vert", "shaders/default.frag")
+
         shader.locs[ShaderLocationIndex.SHADER_LOC_MATRIX_MVP] = get_shader_location(shader, "mvp")
         shader.locs[ShaderLocationIndex.SHADER_LOC_VECTOR_VIEW] = get_shader_location(shader, "viewPos")
         shader.locs[ShaderLocationIndex.SHADER_LOC_MATRIX_MODEL] = get_shader_location_attrib(shader,
                                                                                               "instanceTransform")
 
+        # todo: add lights proper implementation
         set_shader_value(shader, get_shader_location(shader, "ambient"), Vector4(2, 2, 2, 1.0),
                          ShaderUniformDataType.SHADER_UNIFORM_VEC4)
         set_shader_value(shader, get_shader_location(shader, "ambient_intensity"), Vector3(.1, .1, .1),
@@ -73,39 +76,65 @@ class GraphicEngine:
         set_shader_value(shader, get_shader_location(shader, "light_pos"), Vector3(0.0, 0.0, 24.0),
                          ShaderUniformDataType.SHADER_UNIFORM_VEC3)
 
-        # todo: add lights proper implementation
-        atoms_material: Material = load_material_default()
-        atoms_material.shader = shader
-        atoms_material.maps[MaterialMapIndex.MATERIAL_MAP_ALBEDO].color = RED
+        # materials
+        base_atoms_material: Material = load_material_default()
+        base_atoms_material.shader = shader
+        base_atoms_material.maps[MaterialMapIndex.MATERIAL_MAP_ALBEDO].color = GRAY
+
+        cdr1_atoms_material: Material = load_material_default()
+        cdr1_atoms_material.shader = shader
+        cdr1_atoms_material.maps[MaterialMapIndex.MATERIAL_MAP_ALBEDO].color = RED
+
+        cdr2_atoms_material: Material = load_material_default()
+        cdr2_atoms_material.shader = shader
+        cdr2_atoms_material.maps[MaterialMapIndex.MATERIAL_MAP_ALBEDO].color = GREEN
+
+        cdr3_atoms_material: Material = load_material_default()
+        cdr3_atoms_material.shader = shader
+        cdr3_atoms_material.maps[MaterialMapIndex.MATERIAL_MAP_ALBEDO].color = BLUE
+
         bonds_material: Material = load_material_default()
         bonds_material.shader = shader
-        bonds_material.maps[MaterialMapIndex.MATERIAL_MAP_ALBEDO].color = BLUE
+        bonds_material.maps[MaterialMapIndex.MATERIAL_MAP_ALBEDO].color = BLACK
 
-        atoms_transforms = []
+        # compute atoms transforms
+        base_atoms_transforms = []
+        cdr1_atoms_transforms = []
+        cdr2_atoms_transforms = []
+        cdr3_atoms_transforms = []
         gen_sphere = gen_mesh_sphere(0.3, 12, 12)
         max_x, max_y = 0, 0
         for atom in self.pdb_parser.all_atoms:
-            x, y, z = self.pdb_parser.all_atom_coords[atom.serial_number-1]
+            x, y, z = self.pdb_parser.all_atom_coords[atom.serial_number - 1]
             max_x = max(max_x, abs(x))
             max_y = max(max_y, abs(y))
             atom_relative_radius = relative_atom_radius[atom.element] * Globals.ATOM_RADIUS_FACTOR
-            atoms_transforms.append(matrix_multiply(
-                matrix_multiply(
-                    matrix_scale(atom_relative_radius, atom_relative_radius, atom_relative_radius),
-                    matrix_rotate(Vector3(1.0, 1.0, 1.0), 0)
-                ), matrix_translate(x, y, z))
-            )
+            std_transform = matrix_multiply(matrix_multiply(
+                        matrix_scale(atom_relative_radius, atom_relative_radius, atom_relative_radius),
+                        matrix_rotate(Vector3(1.0, 1.0, 1.0), 0)
+                    ), matrix_translate(x, y, z))
+            transform = matrix_multiply(
+                    matrix_multiply(std_transform, Globals.X_GLOBAL_ROT_MATRIX),
+                    Globals.Y_GLOBAL_ROT_MATRIX)
+            if atom.parent.serial_number in self.pdb_parser.cdr1_range:
+                cdr1_atoms_transforms.append(transform)
+            elif atom.parent.serial_number in self.pdb_parser.cdr2_range:
+                cdr2_atoms_transforms.append(transform)
+            elif atom.parent.serial_number in self.pdb_parser.cdr3_range:
+                cdr3_atoms_transforms.append(transform)
+            else:
+                base_atoms_transforms.append(transform)
+
+        # compute bonds transforms
         inter_aa_bonds_transforms = self.compute_bonds_transforms(self.pdb_parser.inter_aa_bonds_rel)
         peptide_bonds_transforms = self.compute_bonds_transforms(self.pdb_parser.peptide_bonds_rel)
         gen_cylinder = gen_mesh_cylinder(0.125, 1, 12)
 
+        # mainloop
         is_camera_orbit_control = False
         show_grid = True
         # Main game loop
         while not window_should_close():
-            time = Vector2(get_time(), 0)
-            set_shader_value(shader, get_shader_location(shader, "u_time"), time, ShaderUniformDataType.SHADER_UNIFORM_VEC2)
-
             # camera mode controller
             if is_key_pressed(KeyboardKey.KEY_O):
                 is_camera_orbit_control = not is_camera_orbit_control
@@ -128,12 +157,15 @@ class GraphicEngine:
             begin_drawing()
             clear_background(RAYWHITE)
             begin_mode_3d(self.camera)
-            draw_mesh_instanced(gen_sphere, atoms_material, atoms_transforms, len(atoms_transforms))
+            draw_mesh_instanced(gen_sphere, base_atoms_material, base_atoms_transforms, len(base_atoms_transforms))
+            draw_mesh_instanced(gen_sphere, cdr1_atoms_material, cdr1_atoms_transforms, len(cdr1_atoms_transforms))
+            draw_mesh_instanced(gen_sphere, cdr2_atoms_material, cdr2_atoms_transforms, len(cdr2_atoms_transforms))
+            draw_mesh_instanced(gen_sphere, cdr3_atoms_material, cdr3_atoms_transforms, len(cdr3_atoms_transforms))
             draw_mesh_instanced(gen_cylinder, bonds_material, inter_aa_bonds_transforms, len(inter_aa_bonds_transforms))
             draw_mesh_instanced(gen_cylinder, bonds_material, peptide_bonds_transforms, len(peptide_bonds_transforms))
 
             if show_grid:
-                draw_grid(int(max(max_x, max_y))*2, 1.0)
+                draw_grid(int(max(max_x, max_y)) * 2, 1.0)
             end_mode_3d()
 
             # Draw GUI
@@ -163,7 +195,7 @@ class GraphicEngine:
 
 if __name__ == "__main__":
     pdb_path = r"C:\Users\loren\PycharmProjects\SimBCR-v2\pdb_files\first_try.pdb"
-    _3d_parser = PdbParser3D(pdb_path, None)
+    _3d_parser = PdbParser3D(pdb_path, "94-112")
 
     engine = GraphicEngine(_3d_parser)
     engine.run()
