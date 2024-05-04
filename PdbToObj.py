@@ -35,7 +35,7 @@ class PdbParser3D:
             for chain in model:
                 for residue in chain:
                     for atom in residue:
-                        all_atom.append(atom)
+                        all_atom.insert(atom.serial_number, atom)
         return all_atom
 
     def get_all_atom_coords(self):
@@ -45,7 +45,7 @@ class PdbParser3D:
                 for residue in chain:
                     for atom in residue:
                         x, y, z = atom.coord
-                        all_atom_coord.append((x, y, z))
+                        all_atom_coord.insert(atom.serial_number, (x, y, z))
         return all_atom_coord
 
     def get_only_back_bone_atom_coords(self):
@@ -58,7 +58,7 @@ class PdbParser3D:
                     for atom in residue:
                         if atom.name in back_bone_atoms:
                             x, y, z = atom.coord
-                            back_bone_atom_coord.append((x, y, z))
+                            back_bone_atom_coord.insert(atom.serial_number, (x, y, z))
         return back_bone_atom_coord
 
     def get_only_residue_atom_coords(self):
@@ -70,7 +70,7 @@ class PdbParser3D:
                     for atom in residue:
                         if atom.name not in back_bone_atoms:
                             x, y, z = atom.coord
-                            residue_atom_coord.append((x, y, z))
+                            residue_atom_coord.insert(atom.serial_number, (x, y, z))
         return residue_atom_coord
 
     def compute_inter_aa_bonds_relationship(self):

@@ -30,7 +30,7 @@ struct Light {
 // Input lighting values
 uniform vec4 ambient;
 uniform vec3 viewPos;
-Light lights = Light(1, LIGHT_POINT, vec3(0.0, 0.0, 12.0), vec3(0.0), vec4(1.0));
+Light lights = Light(1, LIGHT_DIRECTIONAL, vec3(0.0, 0.0, 24.0), vec3(0.0), vec4(1.0));
 
 void main()
 {

@@ -11,10 +11,19 @@ uniform sampler2D texture0;
 uniform vec3 viewPos;
 
 uniform vec3 ambient_intensity;
-uniform vec3 diffuse_intensity;
 uniform vec3 specular_intensity;
 uniform vec3 light_pos;
+uniform vec4 colDiffuse;
+uniform vec2 u_time;
 
+vec3 diffuse_intensity = colDiffuse.rgb;
+
+vec3 hsv2rgb(vec3 c)
+{
+    vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+    return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
 
 vec3 getLight(vec3 color) {
     vec3 Normal = normalize(fragNormal);
@@ -36,8 +45,10 @@ vec3 getLight(vec3 color) {
 void main() {
     float gamma = 2.2;
 
-    vec3 start_color = vec3(1.0, 0.0, 0.0);
-    //vec3 start_color = texture(texture0, fragTexCoord).rgb;
+    //vec3 start_color = mix(texture(texture0, fragTexCoord).rgb, vec3(1.000,0,0), abs(sin(u_time.x)));
+    // vec3 start_color = hsv2rgb(vec3(abs(sin(u_time.x/3)), 1.0, 1.0));
+    vec3 start_color = texture(texture0, fragTexCoord).rgb;
+
     // 1. undo gamma correction (done in the tex)
     vec3 color = pow(start_color, vec3(gamma));
 
