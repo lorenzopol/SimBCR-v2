@@ -19,7 +19,7 @@ SimBCR is a CLI-based python project that allows you to quicly set up in silico 
 Given just a few parameters from the terminal, SimBCR will run an in silico VDJ recombination thanks to [the work](#literature-and-resource-references) done by
 Cédric R. Weber and Victor Greiff. Once the simulation is done, protein folding is achieved via [ESMatlas](#literature-and-resource-references) API call. Upon retrieving
 the .pdb file, a fully custom pdb-to-obj file converter is launched and, in the end, free 3D navigation around the model is available. 
-This is done with a modified version of the [3D-Graphic-Engine project](#literature-and-resource-references) from StanislavPetrovV.
+This is achieved via the python implementation of raylib ([official raylib website](https://www.raylib.com/)).
 
 ## Features
 1. Intuitive input system from the terminal 
@@ -29,7 +29,7 @@ This is done with a modified version of the [3D-Graphic-Engine project](#literat
 5. Autonomous local pdb rendering 
 6. Free camera movement around your 3D rendered pdb file 
 7. Autonomous web based pdb rendering via py3dmol and jupyter-notebook 
-8. Two different ways (rainbow and CDR) to color your antibody once folding is done 
+8. Dynamic CDR coloring (R: CDR1, G: CDR2, B: CDR3)
 
 ## Setup
 > WARNING: these are the minimum steps required to run SimBCR with the default settings.
@@ -47,8 +47,8 @@ SimBCR under default parameter which are:
 - **number_of_seqs**: specify how many sequence will be simulated. In the end only one will get randomly selected but all are available in the "SimBCR-v2/from_immuneSIM/'name_repertoire'.csv";
 - **species**: choose if you want human (by writing `--species hs`) or murine (`--species mm`) recombinant receptors sequences;
 - **receptor**: allows you to select which recombinant receptor will be simulated: TCR (`--receptor tr`) or BCR (`--receptor ig`); 
-- **chain**: allows you to select which chain of the given receptor will be simulated: "h" and "l" for BCR/IG, "a" and "b" for TCR;
-- **renderer**: specify which pdb renderer you want to run. --renderer local will start an instance of PdbGraphicEngine while --renderer web will launch a web page where py3dmol and jupiter notebook will take care of rendering your .pdb file
+- **chain**: `--chain` allows you to select which chain of the given receptor will be simulated: "h" and "l" for BCR/IG, "a" and "b" for TCR;
+- **renderer**: specify which pdb renderer you want to run. `--renderer local` will start an instance of PdbGraphicEngine while `--renderer web` will launch a web page where py3dmol and jupiter notebook will take care of rendering your .pdb file
 
 Overall, default runs translates to `python main.py --number_of_seqs 100 --species hs --receptor ig --chain h --name_repertoire hs_igh_sim --renderer local`.
 See the [Sample input](#sample-input) section for terminal-input examples.

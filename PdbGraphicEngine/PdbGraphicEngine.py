@@ -200,11 +200,7 @@ class GraphicEngine:
             set_shader_value(shader, shader.locs[ShaderLocationIndex.SHADER_LOC_VECTOR_VIEW], self.camera.position,
                              ShaderUniformDataType.SHADER_UNIFORM_VEC3)
             # Draw
-            if is_rendering:
-                render_texture = load_render_texture(self.SCREEN_WIDTH, self.SCREEN_HEIGHT)
-                begin_texture_mode(render_texture)
-            else:
-                begin_drawing()
+            begin_drawing()
             clear_background(RAYWHITE)
             begin_mode_3d(self.camera)
 
@@ -223,13 +219,7 @@ class GraphicEngine:
 
             if show_grid:
                 draw_grid(int(max(max_x, max_y)) * 2, 1.0)
-            if is_rendering:
-                end_texture_mode()
-                texture2D = Texture2D(render_texture.id, self.SCREEN_WIDTH, self.SCREEN_HEIGHT, PixelFormat.PIXELFORMAT_UNCOMPRESSED_R32G32B32, False)
-
-
-            else:
-                end_mode_3d()
+            end_mode_3d()
 
             # Draw GUI
             draw_rectangle(10, 40, 240, 200, fade(SKYBLUE, 0.5))
