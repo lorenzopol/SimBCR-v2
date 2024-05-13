@@ -10,24 +10,46 @@ class PdbParser3D:
     cdr3_raw_range: str | None
 
     def __post_init__(self):
-        # consider making parser static if not used elsewhere
         self.parser = PDBParser()
         self.structure = self.parser.get_structure('protein', self.pdb_file_path)
-        self.all_atom_coords = self.get_all_atom_coords()
+
         self.all_atoms = self.get_all_atoms()
         self.all_residues = list(self.structure.get_residues())
+
+        self.all_atom_coords = self.get_all_atom_coords()
         self.back_bone_atom_coords = self.get_only_back_bone_atom_coords()
+
         self.inter_aa_bonds_rel = self.compute_inter_aa_bonds_relationship()
         self.peptide_bonds_rel = self.compute_peptide_bonds_relationship()
+
         if self.cdr3_raw_range is None:
             self.cdr1_range = None
             self.cdr2_range = None
             self.cdr3_range = None
+
+            self.cdr1_atoms = None
+            self.cdr2_atoms = None
+            self.cdr3_atoms = None
+
+            self.cdr1_bonds = None
+            self.cdr2_bonds = None
+            self.cdr3_bonds = None
+
         else:
             self.cdr1_range = range(26, 38)
             self.cdr2_range = range(55, 65)
             self.cdr3_range = range(int(self.cdr3_raw_range.split("-")[0]),
                                     int(self.cdr3_raw_range.split("-")[1]))
+
+            self.cdr1_atoms = self.assign_atom_to_cdr_range(self.cdr1_range)
+            self.cdr2_atoms = self.assign_atom_to_cdr_range(self.cdr2_range)
+            self.cdr3_atoms = self.assign_atom_to_cdr_range(self.cdr3_range)
+
+            self.cdr1_bonds = []
+            self.cdr2_bonds = []
+            self.cdr3_bonds = []
+            self.base_bonds = []
+            self.assign_bond_rel_to_cdr_range()
 
     def get_all_atoms(self):
         all_atom = []
@@ -73,6 +95,16 @@ class PdbParser3D:
                             residue_atom_coord.insert(atom.serial_number, (x, y, z))
         return residue_atom_coord
 
+    def assign_atom_to_cdr_range(self, cdr_range):
+        cdr_atoms = []
+        for model in self.structure:
+            for chain in model:
+                for residue in chain:
+                    for atom in residue:
+                        if atom.get_parent().get_id()[1] in cdr_range:
+                            cdr_atoms.insert(atom.serial_number, atom.serial_number)
+        return cdr_atoms
+
     def compute_inter_aa_bonds_relationship(self):
         """uses atom.serial_number(ie second col in .pdb files) to reference bonds relationship between atoms inside
         an AA"""
@@ -107,6 +139,19 @@ class PdbParser3D:
 
             peptide_bonds_relationship_container.append((c_atom.serial_number, n_atom.serial_number))
         return peptide_bonds_relationship_container
+
+    def assign_bond_rel_to_cdr_range(self):
+        for first_atom_sn, second_atom_sn in self.peptide_bonds_rel + self.inter_aa_bonds_rel:
+            first_atom_residue_number = self.all_atoms[first_atom_sn-1].get_parent().get_id()[1]
+            second_atom_residue_number = self.all_atoms[second_atom_sn-1].get_parent().get_id()[1]
+            if first_atom_residue_number in self.cdr1_range and second_atom_residue_number in self.cdr1_range:
+                self.cdr1_bonds.append((first_atom_sn, second_atom_sn))
+            elif first_atom_residue_number in self.cdr2_range and second_atom_residue_number in self.cdr2_range:
+                self.cdr2_bonds.append((first_atom_sn, second_atom_sn))
+            elif first_atom_residue_number in self.cdr3_range and second_atom_residue_number in self.cdr3_range:
+                self.cdr3_bonds.append((first_atom_sn, second_atom_sn))
+            else:
+                self.base_bonds.append((first_atom_sn, second_atom_sn))
 
 
 class GeometryBuilder:

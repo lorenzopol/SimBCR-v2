@@ -19,6 +19,12 @@ class Globals:
             45.0, CameraProjection.CAMERA_PERSPECTIVE)
 
 
+def in_place_array_mat_mul(array, matrix):
+    for i in range(len(array)):
+        array[i] = matrix_multiply(array[i], matrix)
+    return array
+
+
 class GraphicEngine:
     def __init__(self, pdb_parser: PdbParser3D):
         self.pdb_parser = pdb_parser
@@ -116,26 +122,30 @@ class GraphicEngine:
             transform = matrix_multiply(
                     matrix_multiply(std_transform, Globals.X_GLOBAL_ROT_MATRIX),
                     Globals.Y_GLOBAL_ROT_MATRIX)
-            
-            residue_idx = atom.get_parent().get_id()[1] 
-            if residue_idx in self.pdb_parser.cdr1_range:
+
+            if atom.serial_number in self.pdb_parser.cdr1_atoms:
                 cdr1_atoms_transforms.append(transform)
-            elif residue_idx in self.pdb_parser.cdr2_range:
+            elif atom.serial_number in self.pdb_parser.cdr2_atoms:
                 cdr2_atoms_transforms.append(transform)
-            elif residue_idx in self.pdb_parser.cdr3_range:
+            elif atom.serial_number in self.pdb_parser.cdr3_atoms:
                 cdr3_atoms_transforms.append(transform)
             else:
                 base_atoms_transforms.append(transform)
 
         # compute bonds transforms
-        inter_aa_bonds_transforms = self.compute_bonds_transforms(self.pdb_parser.inter_aa_bonds_rel)
-        peptide_bonds_transforms = self.compute_bonds_transforms(self.pdb_parser.peptide_bonds_rel)
+        base_bonds_transform = self.compute_bonds_transforms(self.pdb_parser.base_bonds)
+        cdr1_bonds_transform = self.compute_bonds_transforms(self.pdb_parser.cdr1_bonds)
+        cdr2_bonds_transform = self.compute_bonds_transforms(self.pdb_parser.cdr2_bonds)
+        cdr3_bonds_transform = self.compute_bonds_transforms(self.pdb_parser.cdr3_bonds)
         gen_cylinder = gen_mesh_cylinder(0.125, 1, 12)
 
         # mainloop
         is_camera_orbit_control = False
         show_grid = True
-        # Main game loop
+        is_rendering = False
+        spin_counter = 0
+        spin = 0
+        cdr_show = 5
         while not window_should_close():
             # camera mode controller
             if is_key_pressed(KeyboardKey.KEY_O):
@@ -147,29 +157,79 @@ class GraphicEngine:
                 update_camera(self.camera, CameraMode.CAMERA_ORBITAL)
             else:
                 update_camera(self.camera, CameraMode.CAMERA_FREE)
-
+            if is_key_pressed(KeyboardKey.KEY_Z):
+                is_rendering = not is_rendering
+            # export_image(load_image_from_screen(), "export.png")
+            if is_key_pressed(KeyboardKey.KEY_X):
+                spin_counter += 1
+                spin = (spin_counter % 3) - 1
             # reset camera
             if is_key_pressed(KeyboardKey.KEY_R):
-                del self.camera
-                self.camera = Globals.get_default_camera()
+                self.camera.target = Vector3(0.0, 0.0, 0.0)
+                self.camera.up = Vector3(0.0, 1.0, 0.0)
+
+            if is_key_down(KeyboardKey.KEY_RIGHT_BRACKET):  # equals minus keyboard key
+                self.camera.fovy -= 1
+            if is_key_down(KeyboardKey.KEY_SLASH):  # equals plus keyboard key
+                self.camera.fovy += 1
+
+            if is_key_pressed(KeyboardKey.KEY_ONE):
+                cdr_show = 1
+            if is_key_pressed(KeyboardKey.KEY_TWO):
+                cdr_show = 2
+            if is_key_pressed(KeyboardKey.KEY_THREE):
+                cdr_show = 3
+            if is_key_pressed(KeyboardKey.KEY_FOUR):
+                cdr_show = 4
+            if is_key_pressed(KeyboardKey.KEY_FIVE):
+                cdr_show = 5
+
+            if spin != 0:
+                spin_matrix = matrix_rotate(Vector3(0.0, 1.0, 0.0), get_frame_time()*spin)
+
+                base_atoms_transforms = in_place_array_mat_mul(base_atoms_transforms, spin_matrix)
+                cdr1_atoms_transforms = in_place_array_mat_mul(cdr1_atoms_transforms, spin_matrix)
+                cdr2_atoms_transforms = in_place_array_mat_mul(cdr2_atoms_transforms, spin_matrix)
+                cdr3_atoms_transforms = in_place_array_mat_mul(cdr3_atoms_transforms, spin_matrix)
+
+                base_bonds_transform = in_place_array_mat_mul(base_bonds_transform, spin_matrix)
+                cdr1_bonds_transform = in_place_array_mat_mul(cdr1_bonds_transform, spin_matrix)
+                cdr2_bonds_transform = in_place_array_mat_mul(cdr2_bonds_transform, spin_matrix)
+                cdr3_bonds_transform = in_place_array_mat_mul(cdr3_bonds_transform, spin_matrix)
 
             set_shader_value(shader, shader.locs[ShaderLocationIndex.SHADER_LOC_VECTOR_VIEW], self.camera.position,
                              ShaderUniformDataType.SHADER_UNIFORM_VEC3)
             # Draw
-            begin_drawing()
+            if is_rendering:
+                render_texture = load_render_texture(self.SCREEN_WIDTH, self.SCREEN_HEIGHT)
+                begin_texture_mode(render_texture)
+            else:
+                begin_drawing()
             clear_background(RAYWHITE)
             begin_mode_3d(self.camera)
 
-            draw_mesh_instanced(gen_sphere, base_atoms_material, base_atoms_transforms, len(base_atoms_transforms))
-            draw_mesh_instanced(gen_sphere, cdr1_atoms_material, cdr1_atoms_transforms, len(cdr1_atoms_transforms))
-            draw_mesh_instanced(gen_sphere, cdr2_atoms_material, cdr2_atoms_transforms, len(cdr2_atoms_transforms))
-            draw_mesh_instanced(gen_sphere, cdr3_atoms_material, cdr3_atoms_transforms, len(cdr3_atoms_transforms))
-            draw_mesh_instanced(gen_cylinder, bonds_material, inter_aa_bonds_transforms, len(inter_aa_bonds_transforms))
-            draw_mesh_instanced(gen_cylinder, bonds_material, peptide_bonds_transforms, len(peptide_bonds_transforms))
+            if cdr_show in (1, 4, 5):
+                draw_mesh_instanced(gen_sphere, cdr1_atoms_material, cdr1_atoms_transforms, len(cdr1_atoms_transforms))
+                draw_mesh_instanced(gen_cylinder, bonds_material, cdr1_bonds_transform, len(cdr1_bonds_transform))
+            if cdr_show in (2, 4, 5):
+                draw_mesh_instanced(gen_sphere, cdr2_atoms_material, cdr2_atoms_transforms, len(cdr2_atoms_transforms))
+                draw_mesh_instanced(gen_cylinder, bonds_material, cdr2_bonds_transform, len(cdr2_bonds_transform))
+            if cdr_show in (3, 4, 5):
+                draw_mesh_instanced(gen_sphere, cdr3_atoms_material, cdr3_atoms_transforms, len(cdr3_atoms_transforms))
+                draw_mesh_instanced(gen_cylinder, bonds_material, cdr3_bonds_transform, len(cdr3_bonds_transform))
+            if cdr_show == 5:
+                draw_mesh_instanced(gen_sphere, base_atoms_material, base_atoms_transforms, len(base_atoms_transforms))
+                draw_mesh_instanced(gen_cylinder, bonds_material, base_bonds_transform, len(base_bonds_transform))
 
             if show_grid:
                 draw_grid(int(max(max_x, max_y)) * 2, 1.0)
-            end_mode_3d()
+            if is_rendering:
+                end_texture_mode()
+                texture2D = Texture2D(render_texture.id, self.SCREEN_WIDTH, self.SCREEN_HEIGHT, PixelFormat.PIXELFORMAT_UNCOMPRESSED_R32G32B32, False)
+
+
+            else:
+                end_mode_3d()
 
             # Draw GUI
             draw_rectangle(10, 40, 240, 200, fade(SKYBLUE, 0.5))
@@ -178,16 +238,21 @@ class GraphicEngine:
             draw_text("Free camera default controls:", 20, 45, 10, BLACK)
             draw_text("- WASD to move", 40, 60, 10, DARKGRAY)
             draw_text("- SPACE/L-CTRL to move up/down ", 40, 80, 10, DARKGRAY)
-            draw_text("- Z to look at center", 40, 100, 10, DARKGRAY)
-            draw_text("- move the mouse to free look", 40, 120, 10, DARKGRAY)
+            draw_text("- Z to render", 40, 100, 10, DARKGRAY)
+            draw_text("- X to make the receptor spin", 40, 120, 10, DARKGRAY)
             draw_text("- R to reset camera", 40, 140, 10, DARKGRAY)
             draw_text("- H to toggle the grid", 40, 160, 10, DARKGRAY)
             draw_text("- O to toggle the orbit view", 40, 180, 10, DARKGRAY)
-            draw_text("- Mouse Wheel to Zoom in-out", 40, 200, 10, DARKGRAY)
+            draw_text("- Mouse Wheel or +/- to Zoom in-out", 40, 200, 10, DARKGRAY)
             draw_text("- Mouse Wheel Pressed to Pan", 40, 220, 10, DARKGRAY)
-            draw_text(
-                f"Camera position: {self.camera.position.x} | {self.camera.position.y} | {self.camera.position.z}", 40,
-                240, 10, RED)
+
+            draw_rectangle(10, 240, 100, 100, fade(LIGHTGRAY, 0.5))
+            draw_rectangle_lines(10, 240, 100, 100, LIGHTGRAY)
+            draw_text("CDR INFO", 20, 260, 10, BLACK)
+            draw_text(f"CDR1: {self.pdb_parser.cdr1_range[0]}>{self.pdb_parser.cdr1_range[1]}", 20, 280, 10, DARKGRAY)
+            draw_text(f"CDR2: {self.pdb_parser.cdr2_range[0]}>{self.pdb_parser.cdr2_range[1]}", 20, 300, 10, DARKGRAY)
+            draw_text(f"CDR3: {self.pdb_parser.cdr3_range[0]}>{self.pdb_parser.cdr3_range[1]}", 20, 320, 10, DARKGRAY)
+
             draw_fps(10, 10)
 
             end_drawing()
