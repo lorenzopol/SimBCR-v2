@@ -1,4 +1,5 @@
 from pyray import *
+from PIL import Image
 
 from BiologicalConstants import relative_atom_radius
 from PdbToObj import PdbParser3D
@@ -31,8 +32,13 @@ class GraphicEngine:
         self.SCREEN_WIDTH = 1920
         self.SCREEN_HEIGHT = 1080
         self.velocity = 0.2
+        self.is_first_draw_call = True
         self.camera = Globals.get_default_camera()
         self.init_engine()
+
+        # draw calls attributes
+        self.gen_sphere = gen_mesh_sphere(0.3, 12, 12)
+        self.gen_cylinder = gen_mesh_cylinder(0.125, 1, 12)
 
     def init_engine(self):
         init_window(self.SCREEN_WIDTH, self.SCREEN_HEIGHT, "raylib [core] example - 3d camera mode")
@@ -53,14 +59,15 @@ class GraphicEngine:
             rotMat = matrix_rotate(perp, angle)
             scaleMat = matrix_scale(Globals.BOND_RADIUS_FACTOR, bond_length, Globals.BOND_RADIUS_FACTOR)
             std_transform = matrix_multiply(
-                        matrix_multiply(scaleMat, rotMat),
-                        transMat)
+                matrix_multiply(scaleMat, rotMat),
+                transMat)
             transforms_container.append(
                 matrix_multiply(
                     matrix_multiply(std_transform, Globals.X_GLOBAL_ROT_MATRIX),
                     Globals.Y_GLOBAL_ROT_MATRIX)
             )
         return transforms_container
+
 
     def run(self):
         shader = load_shader("shaders/default.vert", "shaders/default.frag")
@@ -108,7 +115,6 @@ class GraphicEngine:
         cdr1_atoms_transforms = []
         cdr2_atoms_transforms = []
         cdr3_atoms_transforms = []
-        gen_sphere = gen_mesh_sphere(0.3, 12, 12)
         max_x, max_y = 0, 0
         for atom in self.pdb_parser.all_atoms:
             x, y, z = self.pdb_parser.all_atom_coords[atom.serial_number - 1]
@@ -116,12 +122,12 @@ class GraphicEngine:
             max_y = max(max_y, abs(y))
             atom_relative_radius = relative_atom_radius[atom.element] * Globals.ATOM_RADIUS_FACTOR
             std_transform = matrix_multiply(matrix_multiply(
-                        matrix_scale(atom_relative_radius, atom_relative_radius, atom_relative_radius),
-                        matrix_rotate(Vector3(1.0, 1.0, 1.0), 0)
-                    ), matrix_translate(x, y, z))
+                matrix_scale(atom_relative_radius, atom_relative_radius, atom_relative_radius),
+                matrix_rotate(Vector3(1.0, 1.0, 1.0), 0)
+            ), matrix_translate(x, y, z))
             transform = matrix_multiply(
-                    matrix_multiply(std_transform, Globals.X_GLOBAL_ROT_MATRIX),
-                    Globals.Y_GLOBAL_ROT_MATRIX)
+                matrix_multiply(std_transform, Globals.X_GLOBAL_ROT_MATRIX),
+                Globals.Y_GLOBAL_ROT_MATRIX)
 
             if atom.serial_number in self.pdb_parser.cdr1_atoms:
                 cdr1_atoms_transforms.append(transform)
@@ -137,7 +143,6 @@ class GraphicEngine:
         cdr1_bonds_transform = self.compute_bonds_transforms(self.pdb_parser.cdr1_bonds)
         cdr2_bonds_transform = self.compute_bonds_transforms(self.pdb_parser.cdr2_bonds)
         cdr3_bonds_transform = self.compute_bonds_transforms(self.pdb_parser.cdr3_bonds)
-        gen_cylinder = gen_mesh_cylinder(0.125, 1, 12)
 
         # mainloop
         is_camera_orbit_control = False
@@ -159,7 +164,6 @@ class GraphicEngine:
                 update_camera(self.camera, CameraMode.CAMERA_FREE)
             if is_key_pressed(KeyboardKey.KEY_Z):
                 is_rendering = not is_rendering
-            # export_image(load_image_from_screen(), "export.png")
             if is_key_pressed(KeyboardKey.KEY_X):
                 spin_counter += 1
                 spin = (spin_counter % 3) - 1
@@ -185,7 +189,7 @@ class GraphicEngine:
                 cdr_show = 5
 
             if spin != 0:
-                spin_matrix = matrix_rotate(Vector3(0.0, 1.0, 0.0), get_frame_time()*spin)
+                spin_matrix = matrix_rotate(Vector3(0.0, 1.0, 0.0), get_frame_time() * spin)
 
                 base_atoms_transforms = in_place_array_mat_mul(base_atoms_transforms, spin_matrix)
                 cdr1_atoms_transforms = in_place_array_mat_mul(cdr1_atoms_transforms, spin_matrix)
@@ -205,20 +209,29 @@ class GraphicEngine:
             begin_mode_3d(self.camera)
 
             if cdr_show in (1, 4, 5):
-                draw_mesh_instanced(gen_sphere, cdr1_atoms_material, cdr1_atoms_transforms, len(cdr1_atoms_transforms))
-                draw_mesh_instanced(gen_cylinder, bonds_material, cdr1_bonds_transform, len(cdr1_bonds_transform))
+                draw_mesh_instanced(self.gen_sphere, cdr1_atoms_material, cdr1_atoms_transforms,
+                                    len(cdr1_atoms_transforms))
+                draw_mesh_instanced(self.gen_cylinder, bonds_material, cdr1_bonds_transform, len(cdr1_bonds_transform))
             if cdr_show in (2, 4, 5):
-                draw_mesh_instanced(gen_sphere, cdr2_atoms_material, cdr2_atoms_transforms, len(cdr2_atoms_transforms))
-                draw_mesh_instanced(gen_cylinder, bonds_material, cdr2_bonds_transform, len(cdr2_bonds_transform))
+                draw_mesh_instanced(self.gen_sphere, cdr2_atoms_material, cdr2_atoms_transforms,
+                                    len(cdr2_atoms_transforms))
+                draw_mesh_instanced(self.gen_cylinder, bonds_material, cdr2_bonds_transform, len(cdr2_bonds_transform))
             if cdr_show in (3, 4, 5):
-                draw_mesh_instanced(gen_sphere, cdr3_atoms_material, cdr3_atoms_transforms, len(cdr3_atoms_transforms))
-                draw_mesh_instanced(gen_cylinder, bonds_material, cdr3_bonds_transform, len(cdr3_bonds_transform))
+                draw_mesh_instanced(self.gen_sphere, cdr3_atoms_material, cdr3_atoms_transforms,
+                                    len(cdr3_atoms_transforms))
+                draw_mesh_instanced(self.gen_cylinder, bonds_material, cdr3_bonds_transform, len(cdr3_bonds_transform))
             if cdr_show == 5:
-                draw_mesh_instanced(gen_sphere, base_atoms_material, base_atoms_transforms, len(base_atoms_transforms))
-                draw_mesh_instanced(gen_cylinder, bonds_material, base_bonds_transform, len(base_bonds_transform))
+                draw_mesh_instanced(self.gen_sphere, base_atoms_material, base_atoms_transforms,
+                                    len(base_atoms_transforms))
+                draw_mesh_instanced(self.gen_cylinder, bonds_material, base_bonds_transform, len(base_bonds_transform))
 
             if show_grid:
                 draw_grid(int(max(max_x, max_y)) * 2, 1.0)
+
+            if is_rendering:
+                export_image(load_image_from_screen(), "export.png")
+
+                is_rendering = not is_rendering
             end_mode_3d()
 
             # Draw GUI
