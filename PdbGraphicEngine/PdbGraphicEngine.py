@@ -230,7 +230,6 @@ class GraphicEngine:
 
             if is_rendering:
                 export_image(load_image_from_screen(), "export.png")
-
                 is_rendering = not is_rendering
             end_mode_3d()
 
