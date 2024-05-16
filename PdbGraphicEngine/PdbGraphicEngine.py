@@ -86,7 +86,7 @@ class GraphicEngine:
                          ShaderUniformDataType.SHADER_UNIFORM_VEC3)
         set_shader_value(shader, get_shader_location(shader, "specular_intensity"), Vector3(1.0, 1.0, 1.0),
                          ShaderUniformDataType.SHADER_UNIFORM_VEC3)
-        set_shader_value(shader, get_shader_location(shader, "light_pos"), Vector3(0.0, 0.0, 24.0),
+        set_shader_value(shader, get_shader_location(shader, "light_pos"), Vector3(-10.0, 0.0, 24.0),
                          ShaderUniformDataType.SHADER_UNIFORM_VEC3)
 
         # materials
