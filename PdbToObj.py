@@ -34,7 +34,6 @@ class PdbParser3D:
             self.cdr1_bonds = None
             self.cdr2_bonds = None
             self.cdr3_bonds = None
-
         else:
             self.cdr1_range = range(26, 38)
             self.cdr2_range = range(55, 65)
