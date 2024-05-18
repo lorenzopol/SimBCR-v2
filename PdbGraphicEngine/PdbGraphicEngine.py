@@ -68,7 +68,6 @@ class GraphicEngine:
             )
         return transforms_container
 
-
     def run(self):
         shader = load_shader("shaders/default.vert", "shaders/default.frag")
 
@@ -86,8 +85,7 @@ class GraphicEngine:
                          ShaderUniformDataType.SHADER_UNIFORM_VEC3)
         set_shader_value(shader, get_shader_location(shader, "specular_intensity"), Vector3(1.0, 1.0, 1.0),
                          ShaderUniformDataType.SHADER_UNIFORM_VEC3)
-        set_shader_value(shader, get_shader_location(shader, "light_pos"), Vector3(-10.0, 0.0, 24.0),
-                         ShaderUniformDataType.SHADER_UNIFORM_VEC3)
+
 
         # materials
         base_atoms_material: Material = load_material_default()
@@ -202,6 +200,8 @@ class GraphicEngine:
                 cdr3_bonds_transform = in_place_array_mat_mul(cdr3_bonds_transform, spin_matrix)
 
             set_shader_value(shader, shader.locs[ShaderLocationIndex.SHADER_LOC_VECTOR_VIEW], self.camera.position,
+                             ShaderUniformDataType.SHADER_UNIFORM_VEC3)
+            set_shader_value(shader, get_shader_location(shader, "light_pos"), self.camera.position,
                              ShaderUniformDataType.SHADER_UNIFORM_VEC3)
             # Draw
             begin_drawing()
