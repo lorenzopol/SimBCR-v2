@@ -50,7 +50,7 @@ SimBCR under default parameter which are:
 - **chain**: `--chain` allows you to select which chain of the given receptor will be simulated: "h" and "l" for BCR/IG, "a" and "b" for TCR;
 - **renderer**: specify which pdb renderer you want to run. `--renderer local` will start an instance of PdbGraphicEngine while `--renderer web` will launch a web page where py3dmol and jupiter notebook will take care of rendering your .pdb file
 
-Overall, default runs translates to `python main.py --number_of_seqs 100 --species hs --receptor ig --chain h --name_repertoire hs_igh_sim --renderer local`.
+Overall, default runs translate to `python main.py --number_of_seqs 100 --species hs --receptor ig --chain h --name_repertoire hs_igh_sim --renderer local`.
 See the [Sample input](#sample-input) section for terminal-input examples.
 
 Since SimBCR "manually" runs ImmuneSIM, you can hop into SimBCR-v2/from_immuneSIM/main.R and manually modify each 
@@ -64,11 +64,10 @@ Using custom inputs in these two ways is NOT recommended and please refer to the
 
 
 ## Showcase
+Sample [video](https://github.com/lorenzopol/SimBCR-v2/assets/112185896/28da8d1a-8341-4c3a-a7a9-33bc653f9ef3) of the output with CDR coloring in local rendering (R: CDR1 (estimate), G: CDR2 (estimate), B: CDR: 3)
+
 Sample output in local rendering
 ![default_output.png](screenshots/default_output.png)
-
-Sample output with CDR coloring in local rendering (R: CDR1 (estimate), G: CDR2 (estimate), B: CDR: 3)
-![CDR.png](screenshots/CDR.png)
 
 Sample output with CDR coloring in web rendering
 ![default_output.png](screenshots/web_output.png)
