@@ -101,15 +101,12 @@ def main(rebuild, skip_to_render):
         if not skip_to_render:
             folder.fold(path_to_pdb)
             _3d_parser = PdbParser3D(path_to_pdb, cdr3_range)
-            conv = PdbToObjConverter(_3d_parser)
-            conv.convert_atom_pos_from_coords("obj_files/atom_coords.obj", radius=.5, subdiv=1,
-                                              fake_normals=False, fake_texture=False, shade_smooth=True, texture_mode="CDR")
-            conv.convert_bond_pos_to_cylinder("obj_files/bond_coords.obj", radius=0.25, num_segments=6,
-                                              fake_normals=False, fake_texture=True)
-        GraphicsEngine().run()
+            print(_3d_parser.all_atom_coords)
+            GraphicEngine.run(_3d_parser.all_atom_coords)
+
     elif args.renderer == "web":
         folder.fold_and_show_pdb(path_to_pdb, "CDR", cdr3_range)
 
 
 if __name__ == "__main__":
-    main(rebuild=False, skip_to_render=True)
+    main(rebuild=True, skip_to_render=False)

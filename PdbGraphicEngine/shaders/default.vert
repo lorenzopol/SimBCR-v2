@@ -1,24 +1,26 @@
 #version 330
 
-layout (location = 0) in vec2 in_texcoord_0;
-layout (location = 1) in vec3 in_normal;
-layout (location = 2) in vec3 in_position;
+in vec2 vertexTexCoord;
+in vec3 vertexNormal;
+in vec3 vertexPosition;
+in mat4 instanceTransform;
 
-out vec2 uv_0;
-out vec3 normal;
-out vec3 fragPos;
+uniform mat4 mvp;
+uniform mat4 matNormal;
 
-uniform mat4 m_proj;
-uniform mat4 m_view;
-uniform mat4 m_model;
+out vec2 fragTexCoord;
+out vec3 fragNormal;
+out vec3 fragPosition;
+
 
 void main() {
-    uv_0 = in_texcoord_0;
+    fragTexCoord = vertexTexCoord;
+    mat4 mvpi = mvp*instanceTransform;
 
     // position of the fragment in world space
-    fragPos = vec3(m_model * vec4(in_position, 1.0));
+    fragPosition = vec3(instanceTransform * vec4(vertexPosition, 1.0));
 
     // transpose(invert(m_model)) is done in order to prevent normal to be affectaed by non uniform scale
-    normal = mat3(transpose(inverse(m_model))) * normalize(in_normal);
-    gl_Position = m_proj * m_view * m_model * vec4(in_position, 1.0);
+    fragNormal = mat3(transpose(inverse(instanceTransform))) * normalize(vertexNormal);
+    gl_Position = mvpi * vec4(vertexPosition, 1.0);
 }
