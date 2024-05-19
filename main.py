@@ -93,15 +93,14 @@ def main(rebuild, skip_to_render):
 
     # protein folding
     print("initializing protein folding")
-    path_to_pdb = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pdb_files/first_try.pdb")
+    path_to_pdb = os.path.join(os.path.dirname(os.path.realpath(__file__)), "pdb_files/new.pdb")
     folder = pf.ESMatlas(aa_light_chain)
 
     print("initializing graphic engine")
     if args.renderer == "local":
         if not skip_to_render:
             folder.fold(path_to_pdb)
-            _3d_parser = PdbParser3D(path_to_pdb, cdr3_range)
-            print(_3d_parser.all_atom_coords)
+            _3d_parser = PdbParser3D(path_to_pdb, cdr3_range, len(aa_variable_sequence))
             GraphicEngine.run(_3d_parser.all_atom_coords)
 
     elif args.renderer == "web":
