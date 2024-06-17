@@ -1,5 +1,4 @@
 from pyray import *
-from PIL import Image
 
 from BiologicalConstants import relative_atom_radius
 from PdbToObj import PdbParser3D
@@ -59,6 +58,9 @@ class Group:
         self.bonds = self.assign_bonds()
         self.atom_transforms = self.compute_atom_transforms()
         self.bond_transforms = self.compute_bond_transforms()
+
+        self.default_atom_transforms = self.atom_transforms.copy()
+        self.default_bond_transforms = self.bond_transforms.copy()
 
         self.atoms_color = atoms_color
         self.bonds_color = bonds_color
@@ -126,6 +128,10 @@ class Group:
             )
         return transforms_container
 
+    def reset_transforms(self):
+        self.atom_transforms = self.default_atom_transforms.copy()
+        self.bond_transforms = self.default_bond_transforms.copy()
+
     def show(self):
         if not self.should_show:
             return
@@ -183,8 +189,14 @@ class GraphicEngine:
         is_camera_orbit_control = False
         show_grid = True
         is_rendering = False
-        spin_counter = 0
-        spin = 0
+
+        spin_counter_x = 0
+        spin_counter_y = 0
+        spin_counter_z = 0
+        spin_x = 0
+        spin_y = 0
+        spin_z = 0
+
         cdr_show = 5
         while not window_should_close():
             # camera mode controller
@@ -192,16 +204,17 @@ class GraphicEngine:
                 is_camera_orbit_control = not is_camera_orbit_control
             if is_key_pressed(KeyboardKey.KEY_H):
                 show_grid = not show_grid
-            if is_camera_orbit_control:
-                self.camera.target = Vector3(0.0, 0.0, 0.0)
-                update_camera(self.camera, CameraMode.CAMERA_ORBITAL)
-            else:
-                update_camera(self.camera, CameraMode.CAMERA_FREE)
-            if is_key_pressed(KeyboardKey.KEY_Z):
+            if is_key_pressed(KeyboardKey.KEY_F):
                 is_rendering = not is_rendering
             if is_key_pressed(KeyboardKey.KEY_X):
-                spin_counter += 1
-                spin = (spin_counter % 3) - 1
+                spin_counter_x += 1
+                spin_x = (spin_counter_x % 3) - 1
+            if is_key_pressed(KeyboardKey.KEY_Y):
+                spin_counter_y += 1
+                spin_y = (spin_counter_y % 3) - 1
+            if is_key_pressed(KeyboardKey.KEY_Z):
+                spin_counter_z += 1
+                spin_z = (spin_counter_z % 3) - 1
             # reset camera
             if is_key_pressed(KeyboardKey.KEY_R):
                 self.camera.target = Vector3(0.0, 0.0, 0.0)
@@ -222,9 +235,29 @@ class GraphicEngine:
                 cdr_show = 4
             if is_key_pressed(KeyboardKey.KEY_FIVE):
                 cdr_show = 5
+            if is_key_pressed(KeyboardKey.KEY_F):
+                for group in Globals.ATOMS_GROUP:
+                    group.reset_transforms()
 
-            if spin != 0:
-                spin_matrix = matrix_rotate(Vector3(0.0, 1.0, 0.0), get_frame_time() * 0.5 * spin)
+            if is_camera_orbit_control:
+                self.camera.target = Vector3(0.0, 0.0, 0.0)
+                update_camera(self.camera, CameraMode.CAMERA_ORBITAL)
+            else:
+                update_camera(self.camera, CameraMode.CAMERA_FREE)
+            if spin_z > 0:
+                spin_matrix = matrix_rotate(Vector3(0.0, 1.0, 0.0), get_frame_time() * 0.5 * spin_z)
+                for group in Globals.ATOMS_GROUP:
+                    if group.show:
+                        group.atom_transforms = in_place_array_mat_mul(group.atom_transforms, spin_matrix)
+                        group.bond_transforms = in_place_array_mat_mul(group.bond_transforms, spin_matrix)
+            if spin_x > 0:
+                spin_matrix = matrix_rotate(Vector3(1.0, 0.0, 0.0), get_frame_time() * 0.5 * spin_x)
+                for group in Globals.ATOMS_GROUP:
+                    if group.show:
+                        group.atom_transforms = in_place_array_mat_mul(group.atom_transforms, spin_matrix)
+                        group.bond_transforms = in_place_array_mat_mul(group.bond_transforms, spin_matrix)
+            if spin_y > 0:
+                spin_matrix = matrix_rotate(Vector3(0.0, 0.0, 1.0), get_frame_time() * 0.5 * spin_y)
                 for group in Globals.ATOMS_GROUP:
                     if group.show:
                         group.atom_transforms = in_place_array_mat_mul(group.atom_transforms, spin_matrix)
@@ -273,19 +306,19 @@ class GraphicEngine:
             end_mode_3d()
 
             # Draw GUI
-            draw_rectangle(10, 40, 240, 200, fade(SKYBLUE, 0.5))
-            draw_rectangle_lines(10, 40, 240, 200, BLUE)
+            draw_rectangle(10, 40, 320, 200, fade(SKYBLUE, 0.5))
+            draw_rectangle_lines(10, 40, 320, 200, BLUE)
 
             draw_text("Free camera default controls:", 20, 45, 10, BLACK)
-            draw_text("- WASD to move", 40, 60, 10, DARKGRAY)
+            draw_text("- WASD to move, Q/E to lean left/right", 40, 60, 10, DARKGRAY)
             draw_text("- SPACE/L-CTRL to move up/down ", 40, 80, 10, DARKGRAY)
-            draw_text("- Z to render", 40, 100, 10, DARKGRAY)
+            draw_text("- F to render", 40, 100, 10, DARKGRAY)
             draw_text("- X to make the receptor spin", 40, 120, 10, DARKGRAY)
             draw_text("- R to reset camera", 40, 140, 10, DARKGRAY)
             draw_text("- H to toggle the grid", 40, 160, 10, DARKGRAY)
             draw_text("- O to toggle the orbit view", 40, 180, 10, DARKGRAY)
+            draw_text("- 1 through 5 to show CDR1/CDR2/CDR3/Fab/whole", 40, 220, 10, DARKGRAY)
             draw_text("- Mouse Wheel or +/- to Zoom in-out", 40, 200, 10, DARKGRAY)
-            draw_text("- Mouse Wheel Pressed to Pan", 40, 220, 10, DARKGRAY)
 
             draw_rectangle(10, 240, 100, 100, fade(LIGHTGRAY, 0.5))
             draw_rectangle_lines(10, 240, 100, 100, LIGHTGRAY)
