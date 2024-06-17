@@ -113,3 +113,7 @@ class Swiss:
         """extend self.fold and shows its result"""
         output_filename = self.fold(tile)
         u.show_3D_from_pdb(output_filename, mode, cdr3_range)
+
+
+if __name__ == "__main__":
+    ESMatlas("QVQLVQSGAEVKKPGASVKVSCKASGYTFTSYDINWVRQATGQGLEWMGWMNPNSGNTGYAQKFQGRVTMTRNTSISTAYMELSSLRSEDTAVYYCARGYGSGSYYNADYFDYWGQGTLVTVSSSASTKGPSVFPLAPSSKSTSGGTAALGCLVKDYFPEPVTVSWNSGALTXSGVHTFPAVLQSSGLYSLSSVVTVPSSSLGTQTYICNVNHKPSNTKVDKK").fold("pdb_files/new.pdb")

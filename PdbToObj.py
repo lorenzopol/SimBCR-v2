@@ -8,6 +8,7 @@ import numpy as np
 class PdbParser3D:
     pdb_file_path: str
     cdr3_raw_range: str | None
+    aa_variable_region_len: int
 
     def __post_init__(self):
         self.parser = PDBParser()
@@ -15,9 +16,10 @@ class PdbParser3D:
 
         self.all_atoms = self.get_all_atoms()
         self.all_residues = list(self.structure.get_residues())
-
         self.all_atom_coords = self.get_all_atom_coords()
         self.back_bone_atom_coords = self.get_only_back_bone_atom_coords()
+        self.fab_atoms = self.get_fab_atoms()
+        self.fc_atoms = self.get_fc_atoms()
 
         self.inter_aa_bonds_rel = self.compute_inter_aa_bonds_relationship()
         self.peptide_bonds_rel = self.compute_peptide_bonds_relationship()
@@ -31,9 +33,6 @@ class PdbParser3D:
             self.cdr2_atoms = None
             self.cdr3_atoms = None
 
-            self.cdr1_bonds = None
-            self.cdr2_bonds = None
-            self.cdr3_bonds = None
         else:
             self.cdr1_range = range(26, 38)
             self.cdr2_range = range(55, 65)
@@ -43,12 +42,6 @@ class PdbParser3D:
             self.cdr1_atoms = self.assign_atom_to_cdr_range(self.cdr1_range)
             self.cdr2_atoms = self.assign_atom_to_cdr_range(self.cdr2_range)
             self.cdr3_atoms = self.assign_atom_to_cdr_range(self.cdr3_range)
-
-            self.cdr1_bonds = []
-            self.cdr2_bonds = []
-            self.cdr3_bonds = []
-            self.base_bonds = []
-            self.assign_bond_rel_to_cdr_range()
 
     def get_all_atoms(self):
         all_atom = []
@@ -94,6 +87,26 @@ class PdbParser3D:
                             residue_atom_coord.insert(atom.serial_number, (x, y, z))
         return residue_atom_coord
 
+    def get_fab_atoms(self):
+        fab_atoms = []
+        for model in self.structure:
+            for chain in model:
+                for residue in chain:
+                    for atom in residue:
+                        if atom.get_parent().get_id()[1] < self.aa_variable_region_len:
+                            fab_atoms.insert(atom.serial_number, atom)
+        return fab_atoms
+
+    def get_fc_atoms(self):
+        fc_atoms = []
+        for model in self.structure:
+            for chain in model:
+                for residue in chain:
+                    for atom in residue:
+                        if atom.get_parent().get_id()[1] >= self.aa_variable_region_len:
+                            fc_atoms.insert(atom.serial_number, atom)
+        return fc_atoms
+
     def assign_atom_to_cdr_range(self, cdr_range):
         cdr_atoms = []
         for model in self.structure:
@@ -138,19 +151,6 @@ class PdbParser3D:
 
             peptide_bonds_relationship_container.append((c_atom.serial_number, n_atom.serial_number))
         return peptide_bonds_relationship_container
-
-    def assign_bond_rel_to_cdr_range(self):
-        for first_atom_sn, second_atom_sn in self.peptide_bonds_rel + self.inter_aa_bonds_rel:
-            first_atom_residue_number = self.all_atoms[first_atom_sn-1].get_parent().get_id()[1]
-            second_atom_residue_number = self.all_atoms[second_atom_sn-1].get_parent().get_id()[1]
-            if first_atom_residue_number in self.cdr1_range and second_atom_residue_number in self.cdr1_range:
-                self.cdr1_bonds.append((first_atom_sn, second_atom_sn))
-            elif first_atom_residue_number in self.cdr2_range and second_atom_residue_number in self.cdr2_range:
-                self.cdr2_bonds.append((first_atom_sn, second_atom_sn))
-            elif first_atom_residue_number in self.cdr3_range and second_atom_residue_number in self.cdr3_range:
-                self.cdr3_bonds.append((first_atom_sn, second_atom_sn))
-            else:
-                self.base_bonds.append((first_atom_sn, second_atom_sn))
 
 
 class GeometryBuilder:
@@ -311,9 +311,9 @@ class GeometryBuilder:
                                        v_container=[], f_container=[])
         returns v_container and f_container with the correctly populated data for vertex and faces value for obj dump"""
         assert not (
-                    fake_normals and shade_smooth), "Can't generate fake normals with smooth shading. Set shade_smooth to False"
+                fake_normals and shade_smooth), "Can't generate fake normals with smooth shading. Set shade_smooth to False"
         assert not (
-                    fake_texture and texture_mode), "Can't generate fake texture with custom texture_mode. Set fake_texture to False"
+                fake_texture and texture_mode), "Can't generate fake texture with custom texture_mode. Set fake_texture to False"
         nof_vertices = (10 * (4 ** subdiv) + 2)
         start_idx = nof_vertices * iteration
         middle_point_cache = {}
@@ -562,6 +562,8 @@ class PdbToObjConverter:
         with open(bond_coords_obj_output_filepath, "w") as obj_file_handle:
             ObjWriters.dump_QUADS_containers(obj_file_handle, v_container,
                                              f_container, n_container, t_container)
+
+
 if __name__ == "__main__":
     # todo smooth shading for cylinders?
     parser = PdbParser3D(r"C:\Users\loren\PycharmProjects\SimBCR-v2\pdb_files\first_try.pdb", "95-114")
