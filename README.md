@@ -64,9 +64,9 @@ Using custom inputs in these two ways is NOT recommended and please refer to the
 
 
 ## Showcase
-Sample [video](https://github.com/lorenzopol/SimBCR-v2/assets/112185896/28da8d1a-8341-4c3a-a7a9-33bc653f9ef3) of the output with CDR coloring in local rendering (R: CDR1 (estimate), G: CDR2 (estimate), B: CDR: 3)
+Sample [video](https://github.com/lorenzopol/SimBCR-v2/assets/112185896/28da8d1a-8341-4c3a-a7a9-33bc653f9ef3) of the output with CDR coloring in local rendering (R: CDR1 (estimate), G: CDR2 (estimate), B: CDR: 3) with the old graphic engine
 
-Sample output in local rendering
+Sample output in local rendering with the new graphic engine
 ![default_output.png](screenshots/default_output.png)
 
 Sample output with CDR coloring in web rendering
